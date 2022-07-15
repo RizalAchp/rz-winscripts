@@ -1,0 +1,156 @@
+<Window x:Class="WinUtility.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WinUtility"
+        mc:Ignorable="d"
+        Background="#777777"
+        Title="Rizal Achmad Windows Utility" Height="533" Width="786">
+	<Viewbox>
+		<Grid Background="#777777" ShowGridLines="False" Name="MainGrid">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="3*"/>
+				<ColumnDefinition Width="7*"/>
+			</Grid.ColumnDefinitions>
+			<StackPanel Background="#777777" SnapsToDevicePixels="True" Grid.Column="0">
+				<Image Height="200" Width="200" Name="Icon" SnapsToDevicePixels="True" Source="https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/13e1c7dc-d426-4664-ad67-790ddee16540/dcl57mc-851d940f-ac8c-44fb-b34d-27eed4d6b453.png/v1/fill/w_883,h_309,strp/meme_logo_by_jordan2048_dcl57mc-fullview.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MzA5IiwicGF0aCI6IlwvZlwvMTNlMWM3ZGMtZDQyNi00NjY0LWFkNjctNzkwZGRlZTE2NTQwXC9kY2w1N21jLTg1MWQ5NDBmLWFjOGMtNDRmYi1iMzRkLTI3ZWVkNGQ2YjQ1My5wbmciLCJ3aWR0aCI6Ijw9ODgzIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmltYWdlLm9wZXJhdGlvbnMiXX0.zKF69ttdqbUO59fhD1LazBTLIyMNvqKIz3eINhWvOwY" Margin="0,10,0,10"/>
+				<Button Content="Install" VerticalAlignment="Top" Height="40" Background="#222222" BorderThickness="0,0,0,0" FontWeight="Bold" Foreground="#ffffff" Name="Tab1BT"/>
+				<Button Content="Development" VerticalAlignment="Top" Height="40" Background="#555555" BorderThickness="0,0,0,0" FontWeight="Bold" Foreground="#ffffff" Name="Tab2BT"/>
+			</StackPanel>
+			<TabControl Grid.Column="1" Padding="-1" Name="TabNav" SelectedIndex="0">
+				<TabItem Header="Install" Visibility="Collapsed" Name="Tab1">
+					<Grid Background="#222222">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="1*"/>
+							<ColumnDefinition Width="1*"/>
+							<ColumnDefinition Width="1*"/>
+						</Grid.ColumnDefinitions>
+						<StackPanel Background="#777777" SnapsToDevicePixels="True" Grid.Column="0" Margin="10">
+							<Label Content="Browsers" FontSize="16" Margin="5,0"/>
+							<CheckBox Name="Installbrave" Content="Brave" Margin="5,0"/>
+							<CheckBox Name="Installchrome" Content="Google Chrome" Margin="5,0"/>
+							<CheckBox Name="Installchromium" Content="Un-Googled Chromium" Margin="5,0"/>
+							<CheckBox Name="Installfirefox" Content="Firefox" Margin="5,0"/>
+
+							<Label Content="Communications" FontSize="16" Margin="5,0"/>
+							<CheckBox Name="Installdiscord" Content="Discord" Margin="5,0"/>
+							<CheckBox Name="Installzoom" Content="Zoom Video Conference" Margin="5,0"/>
+
+
+						</StackPanel>
+						<StackPanel Background="#777777" SnapsToDevicePixels="True" Grid.Column="1" Margin="10">
+
+							<Label Content="Document" FontSize="16" Margin="5,0"/>
+							<CheckBox Name="Installadobe" Content="Adobe Reader DC" Margin="5,0"/>
+							<CheckBox Name="Installlibreoffice" Content="LibreOffice" Margin="5,0"/>
+							<CheckBox Name="Installnotepadplus" Content="Notepad++" Margin="5,0"/>
+							<CheckBox Name="Installsumatra" Content="Sumatra PDF" Margin="5,0"/>
+
+							<Label Content="Games" FontSize="16" Margin="5,0"/>
+							<CheckBox Name="Installepicgames" Content="Epic Games Launcher" Margin="5,0"/>
+							<CheckBox Name="Installsteam" Content="Steam" Margin="5,0"/>
+
+							<Label Content="Multimedia Tools" FontSize="16" Margin="5,0"/>
+							<CheckBox Name="Installaudacity" Content="Audacity" Margin="5,0"/>
+							<CheckBox Name="Installblender" Content="Blender (3D Graphics)" Margin="5,0"/>
+							<CheckBox Name="Installeartrumpet" Content="Eartrumpet (Audio)" Margin="5,0"/>
+							<CheckBox Name="Installflameshot" Content="Flameshot (Screenshots)" Margin="5,0"/>
+							<CheckBox Name="Installfoobar" Content="Foobar2000 (Music Player)" Margin="5,0"/>
+							<CheckBox Name="Installgimp" Content="GIMP (Image Editor)" Margin="5,0"/>
+							<CheckBox Name="Installgreenshot" Content="Greenshot (Screenshots)" Margin="5,0"/>
+							<CheckBox Name="Installhandbrake" Content="HandBrake" Margin="5,0"/>
+							<CheckBox Name="Installimageglass" Content="ImageGlass (Image Viewer)" Margin="5,0"/>
+							<CheckBox Name="Installinkscape" Content="Inkscape" Margin="5,0"/>
+							<CheckBox Name="Installmpc" Content="Media Player Classic (Video Player)" Margin="5,0"/>
+							<CheckBox Name="Installobs" Content="OBS Studio" Margin="5,0"/>
+							<CheckBox Name="Installsharex" Content="ShareX (Screenshots)" Margin="5,0"/>
+							<CheckBox Name="Installspotify" Content="Spotify" Margin="5,0"/>
+							<CheckBox Name="Installvlc" Content="VLC (Video Player)" Margin="5,0"/>
+							<CheckBox Name="Installvoicemeeter" Content="Voicemeeter (Audio)" Margin="5,0"/>
+
+						</StackPanel>
+						<StackPanel Background="#777777" SnapsToDevicePixels="True" Grid.Column="2" Margin="10">
+							<Label Content="Utilities" FontSize="16" Margin="5,0"/>
+							<CheckBox Name="Installsevenzip" Content="7-Zip" Margin="5,0"/>
+							<CheckBox Name="Installautohotkey" Content="AutoHotkey" Margin="5,0"/>
+							<CheckBox Name="Installcpuz" Content="CPU-Z" Margin="5,0"/>
+							<CheckBox Name="Installetcher" Content="Etcher USB Creator" Margin="5,0"/>
+							<CheckBox Name="Installgpuz" Content="GPU-Z" Margin="5,0"/>
+							<CheckBox Name="Installhwinfo" Content="HWInfo" Margin="5,0"/>
+							<CheckBox Name="Installkeepass" Content="KeePassXC" Margin="5,0"/>
+							<CheckBox Name="Installrufus" Content="Rufus Imager" Margin="5,0"/>
+							<Button Name="install" Background="AliceBlue" Content="Start Install" Margin="20,5,20,5" ToolTip="Install all checked programs"/>
+							<Button Name="InstallUpgrade" Background="AliceBlue" Content="Upgrade Installs" Margin="20,5,20,5" ToolTip="Upgrade All Existing Programs on System"/>
+
+						</StackPanel>
+					</Grid>
+				</TabItem>
+				<TabItem Header="Development" Visibility="Collapsed" Name="Tab2">
+					<Grid Background="#333333">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="1*"/>
+							<ColumnDefinition Width="1*"/>
+						</Grid.ColumnDefinitions>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="1*"/>
+							<RowDefinition Height="6*"/>
+						</Grid.RowDefinitions>
+						<StackPanel Background="#777777" Orientation="Horizontal" Grid.Row="0" HorizontalAlignment="Center" Grid.ColumnSpan="2">
+							<Label Content="Development Type:" FontSize="17" VerticalAlignment="Center"/>
+							<Button Name="embeddev" Content="Embeded Development" Margin="7"/>
+							<Button Name="webdev" Content="Web Development" Margin="7"/>
+							<Button Name="mobiledev" Content="Mobile Development" Margin="7"/>
+							<Button Name="alldev" Content="all" Margin="7"/>
+						</StackPanel>
+						<StackPanel Background="#777777" SnapsToDevicePixels="True" Grid.Row="1" Grid.Column="0" Margin="10,5">
+							<Label Content="Development Tools" FontSize="16" Margin="5,0"/>
+							<CheckBox Name="Installgit" Content="Git cli" Margin="5,0"/>
+							<CheckBox Name="Installwinterm" Content="Windows Terminal" Margin="5,0"/>
+							<CheckBox Name="Installgithubdesktop" Content="GitHub Desktop" Margin="5,0"/>
+							<CheckBox Name="Installjetbrains" Content="Jetbrains Toolbox" Margin="5,0"/>
+							<CheckBox Name="Installandroidstudio" Content="Android Studio" Margin="5,0"/>
+							<CheckBox Name="Installsublime" Content="Sublime" Margin="5,0"/>
+							<CheckBox Name="Installvim" Content="vim text editor" Margin="5,0"/>
+							<CheckBox Name="Installneovim" Content="NeoVim text editor" Margin="5,0"/>
+							<CheckBox Name="Installneovide" Content="NeoVim Gui (neovide)" Margin="5,0"/>
+							<CheckBox Name="Installvisualstudio22" Content="Visual Studio 2022 Community" Margin="5,0"/>
+							<CheckBox Name="Installvisualstudio19" Content="Visual Studio 2019 Community" Margin="5,0"/>
+							<CheckBox Name="Installcodelite" Content="CodeLite (C/C++ IDE)" Margin="5,0"/>
+							<CheckBox Name="Installpycharm" Content="PyCharm Community" Margin="5,0"/>
+							<CheckBox Name="Installcygwin" Content="Cygwin (C/C++ build environtment)" Margin="5,0"/>
+							<CheckBox Name="Installmsys2" Content="MSYS2 (C/C++ build environtment)" Margin="5,0"/>
+							<CheckBox Name="Installcmake" Content="Cmake (C/C++ build tools)" Margin="5,0"/>
+							<CheckBox Name="Installvscode" Content="VS Code" Margin="5,0"/>
+							<CheckBox Name="Installvscodium" Content="VS Codium" Margin="5,0"/>
+							<CheckBox Name="Installatom" Content="Atom IDE" Margin="5,0"/>
+							<CheckBox Name="Installpowertoys" Content="Microsoft Powertoys" Margin="5,0"/>
+							<CheckBox Name="Installwindirstat" Content="WinDirStat" Margin="5,0"/>
+							<CheckBox Name="Installadvancedip" Content="Advanced IP Scanner" Margin="5,0"/>
+							<CheckBox Name="Installmremoteng" Content="mRemoteNG" Margin="5,0"/>
+							<CheckBox Name="Installputty" Content="Putty" Margin="5,0"/>
+							<CheckBox Name="Installscp" Content="WinSCP" Margin="5,0"/>
+							<CheckBox Name="Installwireshark" Content="WireShark" Margin="5,0"/>
+
+
+						</StackPanel>
+						<StackPanel Background="#777777" SnapsToDevicePixels="True" Grid.Row="1" Grid.Column="1" Margin="10,5">
+							<Label FontSize="16" Content="Programming Lang"/>
+							<CheckBox Name="Installjava8" Content="OpenJDK Java 8" Margin="5,0"/>
+							<CheckBox Name="Installjava16" Content="OpenJDK Java 16" Margin="5,0"/>
+							<CheckBox Name="Installjava18" Content="Oracle Java 18" Margin="5,0"/>
+							<CheckBox Name="Installpython3" Content="Python3" Margin="5,0"/>
+							<CheckBox Name="Installminiconda" Content="MiniConda3 (python)" Margin="5,0"/>
+							<CheckBox Name="Installnodejs" Content="NodeJS" Margin="5,0"/>
+							<CheckBox Name="Installnodejslts" Content="NodeJS LTS" Margin="5,0"/>
+							<CheckBox Name="Installrust" Content="Rust Lang" Margin="5,0"/>
+							<CheckBox Name="Installgo" Content="Go Lang" Margin="5,0"/>
+
+							<Button Name="installdev" Background="AliceBlue" Content="Install" Margin="20,10,20,0"/>
+						</StackPanel>
+					</Grid>
+				</TabItem>
+			</TabControl>
+		</Grid>
+	</Viewbox>
+</Window>
