@@ -4,8 +4,12 @@
    GitHub      : https://github.com/RizalAchp/rz-winscripts
     Version 0.0.1
 #>
+
+$ARIA2CLInks = "https://github.com/RizalAchp/rz-winscripts/releases/download/alternatives/aria2c.exe"
 $CURRDIR = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('.\')
-Write-Host $CURRDIR
+$DOWNLOADFOLDER = "${env:HOMEDRIVE}${env:HOMEPATH}"
+Write-Host "Got Current Working Directories: $CURRDIR"
+Write-Host "Got Download Directories Folder: $CURRDIR"
 
 $inputXML = Get-Content "MainWindow.xaml" #uncomment for development
 # $inputXML = (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/MainWindow.xaml") #uncomment for Production
@@ -81,6 +85,13 @@ function CheckInstalledPrograms([string]$Program)
 	return $true
 }
 
+function Get-Aria {
+	$OutputAria = "$CURRDIR\aria2c.exe"
+	$wc = New-Object System.Net.WebClient
+	$wc.DownloadFile($ARIA2CLInks, $OutputAria)
+	return $OutputAria
+}
+
 #===========================================================================
 # install function - Install
 #===========================================================================
@@ -95,78 +106,36 @@ function DownloadWithWinget([System.Array]$ItemWingets) {
 	$wingetResult.ToArray()
 	$wingetResult | ForEach-Object { $_ } | Out-Host
 
-	$ButtonType = [System.Windows.MessageBoxButton]::OK
-	$MessageboxTitle = "Installed Programs "
-	$Messageboxbody = ($wingetResult)
-	$MessageIcon = [System.Windows.MessageBoxImage]::Information
-
-	[System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$MessageIcon)
+	$TittleArgs = "Info Installed Programs WIth Winget"
+	$MessageArgs = "Installed:`n$($wingetResult)"
+	Show-MessageBox -Message $MessageArgs -Title $TittleArgs -Buttons 'OK' -Icon 'Information'
 }
 
-function DownloadWithHttpWeb
-{
-    param (
-        [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
-        [ValidateNotNullOrEmpty()]
-        [System.Uri]
-        $Uri,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateNotNullOrEmpty()]
-        [System.IO.FileInfo]
-        $TargetFile = "nul",
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateNotNullOrEmpty()]
-        [Int32]
-        $BufferSize = 1,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateNotNullOrEmpty()]
-        [ValidateSet('KB, MB')]
-        [String]
-        $BufferUnit = 'MB',
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateNotNullOrEmpty()]
-        [ValidateSet('KB, MB')]
-        [Int32]
-        $Timeout = 10000
-    )
-	if ($TargetFile.Name -eq "nul") {
-		$TargetFile = [System.IO.FileInfo]"$env:TMP\$($Uri.Segments[$Uri.Segments.Count -1])"
-	}
-	$ListTarget += $TargetFile
-	Write-Output "Processing to download $TargetFile from $Uri"
-	$request = [System.Net.HttpWebRequest]::Create($Uri)
-	$request.set_Timeout($Timeout) #15 second timeout
-	$response = $request.GetResponse()
-	$totalLength = [System.Math]::Floor($response.get_ContentLength() / 1024)
-	$responseStream = $response.GetResponseStream()
-	$targetStream = New-Object -TypeName ([System.IO.FileStream]) -ArgumentList "$($TargetFile.FullName)", Create
-	switch ($BufferUnit)
+function DownloadWithAria([System.Array]$ItemArias) {
+	$Aria2CExec = Get-Aria
+	if(Test-Path $Aria2CExec -eq $false)
 	{
-		'KB' { $BufferSize = $BufferSize * 1024 }
-		'MB' { $BufferSize = $BufferSize * 1024 * 1024 }
-		Default { $BufferSize = 1024 * 1024 }
+		$TittleArgs = "Aria2c is is Missing, i Think.."
+		$MessageArgs = "Terjadi Kesalahan saat mendownload Aria2c, Coba Lagi (Retry)! or Cancel"
+		$ReturnMsg = Show-MessageBox -Message $MessageArgs -Title $TittleArgs -Buttons 'RetryCancel' -Icon 'Information'
+		switch ($ReturnMsg) {
+			'Retry' { return DownloadWithAria -ItemArias $ItemArias }
+			'Cancel' { return }
+		}
 	}
-	Write-Verbose -Message "Buffer size: $BufferSize B ($($BufferSize/("1$BufferUnit")) $BufferUnit)"
-	$buffer = New-Object byte[] $BufferSize
-	$count = $responseStream.Read($buffer, 0, $buffer.length)
-	$downloadedBytes = $count
-	$downloadedFileName = $Uri -split '/' | Select-Object -Last 1
-	while ($count -gt 0)
+	$ariaResult = New-Object System.Collections.Generic.List[System.Object]
+	foreach( $item in $ItemArias )
 	{
-		$targetStream.Write($buffer, 0, $count)
-		$count = $responseStream.Read($buffer, 0, $buffer.length)
-		$downloadedBytes = $downloadedBytes + $count
-		Write-Progress -Activity "Downloading file '$downloadedFileName'" -Status "Downloaded ($([System.Math]::Floor($downloadedBytes/1024))K of $($totalLength)K): " -PercentComplete ((([System.Math]::Floor($downloadedBytes / 1024)) / $totalLength) * 100)
+		$ArgList = "--command $Aria2CExec -d $DOWNLOADFOLDER | Out-Host"
+		Start-Process powershell.exe -Verb RunAs -ArgumentList $ArgList -Wait  -WindowStyle Maximized
+		$ariaResult.Add("$item`n")
 	}
+	$ariaResult.ToArray() | ForEach-Object { $_ } Out-Host
+	$TittleArgs = "Info Installed Programs WIth Aria2c"
+	$MessageArgs = "Installed Progams On Download $DOWNLOADFOLDER :`n$ariaResult"
+	Show-MessageBox -Message $MessageArgs -Title $TittleArgs -Buttons 'OK' -Icon 'Information'
 
-	Write-Progress -Activity "Finished downloading file '$downloadedFileName'"
-
-	$targetStream.Flush()
-	$targetStream.Close()
-	$targetStream.Dispose()
-	$responseStream.Dispose()
 }
-
 
 #===========================================================================
 # Navigation Controls
@@ -716,7 +685,6 @@ $WPFinstalldev.Add_Click({
 		}
 	}
 })
-$ARIA2CLInks = "https://github.com/RizalAchp/rz-winscripts/releases/download/alternatives/aria2c.exe"
 $RSGWingets = @(
 	"Python.Python.3",
 	"OpenJS.NodeJS.LTS",
@@ -725,6 +693,7 @@ $RSGWingets = @(
 	"Microsoft.VisualStudioCode --source winget"
 )
 $RSGAria2c = @(
+	# TODO!
 )
 $WPFReadySetGo.Add_Click({
 	$IsUsingWinget = $true
@@ -746,9 +715,9 @@ $WPFReadySetGo.Add_Click({
 		}
 	}
 	if ($IsUsingWinget -eq $true) {
-
+		DownloadWithWinget -ItemWingets $RSGWingets
 	} else {
-
+		DownloadWithAria -ItemArias $RSGAria2c
 	}
 })
 
