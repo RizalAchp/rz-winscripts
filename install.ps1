@@ -7,14 +7,12 @@
 
 # $inputXML = Get-Content "MainWindow.xaml" #uncomment for development
 $inputXML = (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/MainWindow.xaml") #uncomment for Production
-
 $inputXML = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:N",'N' -replace '^<Win.*', '<Window'
+
 [void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
 [xml]$XAML = $inputXML #Read XAML
-
 $reader=(New-Object System.Xml.XmlNodeReader $xaml)
-try{
-	$Form=[Windows.Markup.XamlReader]::Load( $reader )}
+try{ $Form=[Windows.Markup.XamlReader]::Load( $reader )}
 catch [System.Management.Automation.MethodInvocationException]
 {
 	Write-Warning "We ran into a problem with the XAML code.  Check the syntax for this control..."
@@ -23,9 +21,7 @@ catch [System.Management.Automation.MethodInvocationException]
 		write-warning "Ensure your &lt;button in the `$inputXML does NOT have a Click=ButtonClick property.  PS can't handle this`n`n`n`n"
 	}
 }
-catch{
-	Write-Host "Unable to load Windows.Markup.XamlReader. Double-check syntax and ensure .net is installed."
-}
+catch{ Write-Host "Unable to load Windows.Markup.XamlReader. Double-check syntax and ensure .net is installed." }
 
 
 $xaml.SelectNodes("//*[@Name]") | ForEach-Object{Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
@@ -308,9 +304,8 @@ $WPFReadySetGo.Add_Click({
 		$ExecIdentifier = @("git", "python", "node", "putty", "code")
 		$Idx = 0
 		foreach ($Exe in $ExecIdentifier) {
-			if ((CheckInstalledPrograms -Program $Exe) -eq $false) { continue; }
-			else { ListWinget.Add($RSGWingets[$Idx]); }
-			$Idx++
+			if ((CheckInstalledPrograms -Program $Exe) -eq $false) { $Idx++;continue; }
+			else { ListWinget.Add($RSGWingets[$Idx]); $Idx++; }
 		}
 		DownloadWithWinget -ItemWingets $ListWinget
 	} else {
@@ -318,9 +313,8 @@ $WPFReadySetGo.Add_Click({
 		$ExecIdentifier = @("git", "python", "node", "putty", "code")
 		$Idx = 0
 		foreach ($Exe in $ExecIdentifier) {
-			if ((CheckInstalledPrograms -Program $Exe) -eq $false) { continue; }
-			else { ListWinget.Add($RSGWingets[$Idx]); }
-			$Idx++
+			if ((CheckInstalledPrograms -Program $Exe) -eq $false) { $Idx++; continue; }
+			else { ListWinget.Add($RSGWingets[$Idx]); $Idx++; }
 		}
 		DownloadWithAria -ItemArias $RSGAria2c
 	}
