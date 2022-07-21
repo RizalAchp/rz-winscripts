@@ -1,42 +1,35 @@
 <#
 .NOTES
-   Author      : Rizal Achmad Pahlevi
-   GitHub      : https://github.com/RizalAchp/rz-winscripts
-    Version 0.0.1
+	Author      : Rizal Achmad Pahlevi
+	GitHub      : https://github.com/RizalAchp/rz-winscripts
+	Version 0.0.1
 #>
-
-$ARIA2CLInks = "https://github.com/RizalAchp/rz-winscripts/releases/download/alternatives/aria2c.exe"
-$CURRDIR = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('.\')
-$DOWNLOADFOLDER = "${env:HOMEDRIVE}${env:HOMEPATH}"
-Write-Host "Got Current Working Directories: $CURRDIR"
-Write-Host "Got Download Directories Folder: $CURRDIR"
 
 # $inputXML = Get-Content "MainWindow.xaml" #uncomment for development
 $inputXML = (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/MainWindow.xaml") #uncomment for Production
 
 $inputXML = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:N",'N' -replace '^<Win.*', '<Window'
 [void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
-[xml]$XAML = $inputXML
-#Read XAML
+[xml]$XAML = $inputXML #Read XAML
 
 $reader=(New-Object System.Xml.XmlNodeReader $xaml)
-try{$Form=[Windows.Markup.XamlReader]::Load( $reader )}
-catch [System.Management.Automation.MethodInvocationException] {
+try{
+	$Form=[Windows.Markup.XamlReader]::Load( $reader )}
+catch [System.Management.Automation.MethodInvocationException]
+{
 	Write-Warning "We ran into a problem with the XAML code.  Check the syntax for this control..."
 	write-host $error[0].Exception.Message -ForegroundColor Red
 	If ($error[0].Exception.Message -like "*button*") {
 		write-warning "Ensure your &lt;button in the `$inputXML does NOT have a Click=ButtonClick property.  PS can't handle this`n`n`n`n"
 	}
 }
-catch{# If it broke some other way <img draggable="false" role="img" class="emoji" alt="😀" src="https://s0.wp.com/wp-content/mu-plugins/wpcom-smileys/twemoji/2/svg/1f600.svg">
+catch{
 	Write-Host "Unable to load Windows.Markup.XamlReader. Double-check syntax and ensure .net is installed."
-		}
+}
 
-#===========================================================================
-# Store Form Objects In PowerShell
-#===========================================================================
 
 $xaml.SelectNodes("//*[@Name]") | ForEach-Object{Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
+
 
 Function Get-FormVariables{
 	If ($global:ReadmeDisplay -ne $true){
@@ -45,6 +38,7 @@ Function Get-FormVariables{
 	write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
 	get-variable WPF*
 }
+
 
 function Show-MessageBox {
   [CmdletBinding(PositionalBinding=$false)]
@@ -86,6 +80,8 @@ function CheckInstalledPrograms([string]$Program)
 }
 
 function Get-Aria {
+	$ARIA2CLInks = "https://github.com/RizalAchp/rz-winscripts/releases/download/alternatives/aria2c.exe"
+	$CURRDIR = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('.\')
 	$OutputAria = "$CURRDIR\aria2c.exe"
 	$wc = New-Object System.Net.WebClient
 	$wc.DownloadFile($ARIA2CLInks, $OutputAria)
@@ -112,6 +108,7 @@ function DownloadWithWinget([System.Array]$ItemWingets) {
 }
 
 function DownloadWithAria([System.Array]$ItemArias) {
+	$DOWNLOADFOLDER = "${env:HOMEDRIVE}${env:HOMEPATH}\Downloads"
 	$Aria2CExec = Get-Aria
 	if(Test-Path $Aria2CExec -eq $false)
 	{
@@ -130,36 +127,77 @@ function DownloadWithAria([System.Array]$ItemArias) {
 		Start-Process powershell.exe -Verb RunAs -ArgumentList $ArgList -Wait  -WindowStyle Maximized
 		$ariaResult.Add("$item`n")
 	}
-	$ariaResult.ToArray() | ForEach-Object { $_ } Out-Host
+	$ariaResult.ToArray() | ForEach-Object { $_ } | Out-Host
 	$TittleArgs = "Info Installed Programs WIth Aria2c"
 	$MessageArgs = "Installed Progams On Download $DOWNLOADFOLDER :`n$ariaResult"
 	Show-MessageBox -Message $MessageArgs -Title $TittleArgs -Buttons 'OK' -Icon 'Information'
 
 }
 
+$ListOfPackageName = @( "Adobe.Acrobat.Reader.64-bit", "Famatech.AdvancedIPScanner",
+	"Google.AndroidStudio", "Audacity.Audacity", "Lexikos.AutoHotkey -s winget",
+	"BlenderFoundation.Blender", "BraveSoftware.BraveBrowser", "Google.Chrome",
+	"eloston.ungoogled-chromium", "Kitware.CMake", "CodeLite.CodeLite", "CPUID.CPU-Z",
+	"Cygwin.Cygwin", "Discord.Discord", "File-New-Project.EarTrumpet",
+	"EpicGames.EpicGamesLauncher", "Balena.Etcher", "Mozilla.Firefox",
+	"Flameshot.Flameshot", "PeterPawlowski.foobar2000", "GIMP.GIMP", "Git.Git",
+	"GitHub.GitHubDesktop", "GoLang.Go", "TechPowerUp.GPU-Z", "Greenshot.Greenshot",
+	"HandBrake.HandBrake", "REALiX.HWiNFO", "DuongDieuPhap.ImageGlass", "Inkscape.Inkscape",
+	"AdoptOpenJDK.OpenJDK.16", "AdoptOpenJDK.OpenJDK.18", "AdoptOpenJDK.OpenJDK.8",
+	"JetBrains.Toolbox", "KeePassXCTeam.KeePassXC", "TheDocumentFoundation.LibreOffice.LTS",
+	"Anaconda.Miniconda3", "clsid2.mpc-hc", "mRemoteNG.mRemoteNG", "msys2.msys2",
+	"Neovim.Neovim", "OpenJS.NodeJS", "OpenJS.NodeJS.LTS", "Notepad++.Notepad++",
+	"OBSProject.OBSStudio", "Microsoft.PowerToys --source winget", "PuTTY.PuTTY --source winget",
+	"JetBrains.PyCharm.Community", "Python.Python.3", "Rufus.Rufus", "Rustlang.Rust.MSVC",
+	"WinSCP.WinSCP", "7zip.7zip", "ShareX.ShareX", "Spotify.Spotify", "Valve.Steam",
+	"SublimeHQ.SublimeText.4", "SumatraPDF.SumatraPDF", "vim.vim",
+	"Microsoft.VisualStudio.2019.Community", "Microsoft.VisualStudio.2022.Community",
+	"VideoLAN.VLC", "VB-Audio.Voicemeeter", "Microsoft.VisualStudioCode --source winget",
+	"VSCodium.VSCodium", "WinDirStat.WinDirStat", "Microsoft.WindowsTerminal",
+	"WiresharkFoundation.Wireshark", "Zoom.Zoom"
+)
+$ListCheckBoxes = @($(Get-Variable "WPFInstall*").Value)
+
+function InitializeDownloadWinget {
+	$ListWillDownloaded = New-Object System.Collections.Generic.List[System.Object]
+	$Index = 0
+	foreach ($CBItem in $ListCheckBoxes) {
+		if ($CBItem.IsChecked -eq $false) { $Index++; continue; }
+		else { $ListWillDownloaded.Add($ListOfPackageName.Get($Index)); $Index++;}
+	}
+	DownloadWithWinget -ItemWingets $ListWillDownloaded.ToArray()
+}
+
 #===========================================================================
 # Navigation Controls
 #===========================================================================
+$JUMLAHTAB = 3
 $WPFTab1BT.Add_Click({
-	$WPFTabNav.Items[0].IsSelected = $true
-	$WPFTabNav.Items[1].IsSelected = $false
-	$WPFTabNav.Items[2].IsSelected = $false
+	$TABIdx = 0
+	foreach ($Idx in $(0..$($JUMLAHTAB-1))) {
+		if ($Idx -eq $TABIdx) { $WPFTabNav.Items[$Idx].IsSelected = $true; }
+		else { $WPFTabNav.Items[$Idx].IsSelected = $false }
+	}
 })
 $WPFTab2BT.Add_Click({
-	$WPFTabNav.Items[0].IsSelected = $false
-	$WPFTabNav.Items[1].IsSelected = $true
-	$WPFTabNav.Items[2].IsSelected = $false
+	$TABIdx = 1
+	foreach ($Idx in $(0..$($JUMLAHTAB-1))) {
+		if ($Idx -eq $TABIdx) { $WPFTabNav.Items[$Idx].IsSelected = $true; }
+		else { $WPFTabNav.Items[$Idx].IsSelected = $false }
+	}
 })
 $WPFTab3BT.Add_Click({
-	$WPFTabNav.Items[0].IsSelected = $false
-	$WPFTabNav.Items[1].IsSelected = $false
-	$WPFTabNav.Items[2].IsSelected = $true
+	$TABIdx = 2
+	foreach ($Idx in $(0..$($JUMLAHTAB-1))) {
+		if ($Idx -eq $TABIdx) { $WPFTabNav.Items[$Idx].IsSelected = $true; }
+		else { $WPFTabNav.Items[$Idx].IsSelected = $false }
+	}
 })
 
 #===========================================================================
 # Tab 1 - Install
 #===========================================================================
-$WPFinstall.Add_Click({
+$WPFselectinstall.Add_Click({
 	if ((CheckInstalledPrograms -Program "winget") -eq $false)
 	{
 		$MessageArgs = "Winget tidak terinstall di PC ini!..$(
@@ -170,323 +208,47 @@ $WPFinstall.Add_Click({
 		Show-MessageBox -Message $MessageArgs  -Title $ErrorArgs -Buttons 'OK' -Icon 'Warning'
 	}
 	else {
-		$wingetarrays = New-Object System.Collections.Generic.List[System.Object]
-		If ( $WPFInstalladobe.IsChecked -eq $true ) {
-			$wingetarrays.Add("Adobe.Acrobat.Reader.64-bit")
-			$WPFInstalladobe.IsChecked = $false
-		}
-		If ( $WPFInstallaudacity.IsChecked -eq $true ) {
-			$wingetarrays.Add("Audacity.Audacity")
-			$WPFInstallaudacity.IsChecked = $false
-		}
-		If ( $WPFInstallbrave.IsChecked -eq $true ) {
-			$wingetarrays.Add("BraveSoftware.BraveBrowser")
-			$WPFInstallbrave.IsChecked = $false
-		}
-		If ( $WPFInstallchrome.IsChecked -eq $true ) {
-			$wingetarrays.Add("Google.Chrome")
-			$WPFInstallchrome.IsChecked = $false
-		}
-		If ( $WPFInstalldiscord.IsChecked -eq $true ) {
-			$wingetarrays.Add("Discord.Discord")
-			$WPFInstalldiscord.IsChecked = $false
-		}
-		If ( $WPFInstalletcher.IsChecked -eq $true ) {
-			$wingetarrays.Add("Balena.Etcher")
-			$WPFInstalletcher.IsChecked = $false
-		}
-		If ( $WPFInstallfirefox.IsChecked -eq $true ) {
-			$wingetarrays.Add("Mozilla.Firefox")
-			$WPFInstallfirefox.IsChecked = $false
-		}
-		If ( $WPFInstallgimp.IsChecked -eq $true ) {
-			$wingetarrays.Add("GIMP.GIMP")
-			$WPFInstallgimp.IsChecked = $false
-		}
-		If ( $WPFInstallimageglass.IsChecked -eq $true ) {
-			$wingetarrays.Add("DuongDieuPhap.ImageGlass")
-			$WPFInstallimageglass.IsChecked = $false
-		}
-		If ( $WPFInstallmpc.IsChecked -eq $true ) {
-			$wingetarrays.Add("clsid2.mpc-hc")
-			$WPFInstallmpc.IsChecked = $false
-		}
-		If ( $WPFInstallnotepadplus.IsChecked -eq $true ) {
-			$wingetarrays.Add("Notepad++.Notepad++")
-			$WPFInstallnotepadplus.IsChecked = $false
-		}
-		If ( $WPFInstallsevenzip.IsChecked -eq $true ) {
-			$wingetarrays.Add("7zip.7zip")
-			$WPFInstallsevenzip.IsChecked = $false
-		}
-		If ( $WPFInstallsharex.IsChecked -eq $true ) {
-			$wingetarrays.Add("ShareX.ShareX")
-			$WPFInstallsharex.IsChecked = $false
-		}
-		If ( $WPFInstallsumatra.IsChecked -eq $true ) {
-			$wingetarrays.Add("SumatraPDF.SumatraPDF")
-			$WPFInstallsumatra.IsChecked = $false
-		}
-		If ( $WPFInstallvlc.IsChecked -eq $true ) {
-			$wingetarrays.Add("VideoLAN.VLC")
-			$WPFInstallvlc.IsChecked = $false
-		}
-		If ( $WPFInstallblender.IsChecked -eq $true ) {
-			$wingetarrays.Add("BlenderFoundation.Blender")
-			$WPFInstallblender.IsChecked = $false
-		}
-		If ( $WPFInstallchromium.IsChecked -eq $true ) {
-			$wingetarrays.Add("eloston.ungoogled-chromium")
-			$WPFInstallchromium.IsChecked = $false
-		}
-		If ( $WPFInstallcpuz.IsChecked -eq $true ) {
-			$wingetarrays.Add("CPUID.CPU-Z")
-			$WPFInstallcpuz.IsChecked = $false
-		}
-		If ( $WPFInstalleartrumpet.IsChecked -eq $true ) {
-			$wingetarrays.Add("File-New-Project.EarTrumpet")
-			$WPFInstalleartrumpet.IsChecked = $false
-		}
-		If ( $WPFInstallepicgames.IsChecked -eq $true ) {
-			$wingetarrays.Add("EpicGames.EpicGamesLauncher")
-			$WPFInstallepicgames.IsChecked = $false
-		}
-		If ( $WPFInstallflameshot.IsChecked -eq $true ) {
-			$wingetarrays.Add("Flameshot.Flameshot")
-			$WPFInstallflameshot.IsChecked = $false
-		}
-		If ( $WPFInstallfoobar.IsChecked -eq $true ) {
-			$wingetarrays.Add("PeterPawlowski.foobar2000")
-			$WPFInstallfoobar.IsChecked = $false
-		}
-		If ( $WPFInstallgpuz.IsChecked -eq $true ) {
-			$wingetarrays.Add("TechPowerUp.GPU-Z")
-			$WPFInstallgpuz.IsChecked = $false
-		}
-		If ( $WPFInstallgreenshot.IsChecked -eq $true ) {
-			$wingetarrays.Add("Greenshot.Greenshot")
-			$WPFInstallgreenshot.IsChecked = $false
-		}
-		If ( $WPFInstallhandbrake.IsChecked -eq $true ) {
-			$wingetarrays.Add("HandBrake.HandBrake")
-			$WPFInstallhandbrake.IsChecked = $false
-		}
-		If ( $WPFInstallhwinfo.IsChecked -eq $true ) {
-			$wingetarrays.Add("REALiX.HWiNFO")
-			$WPFInstallhwinfo.IsChecked = $false
-		}
-		If ( $WPFInstallinkscape.IsChecked -eq $true ) {
-			$wingetarrays.Add("Inkscape.Inkscape")
-			$WPFInstallinkscape.IsChecked = $false
-		}
-		If ( $WPFInstallkeepass.IsChecked -eq $true ) {
-			$wingetarrays.Add("KeePassXCTeam.KeePassXC")
-			$WPFInstallkeepass.IsChecked = $false
-		}
-		If ( $WPFInstallobs.IsChecked -eq $true ) {
-			$wingetarrays.Add("OBSProject.OBSStudio")
-			$WPFInstallobs.IsChecked = $false
-		}
-		If ( $WPFInstallrufus.IsChecked -eq $true ) {
-			$wingetarrays.Add("Rufus.Rufus")
-			$WPFInstallrufus.IsChecked = $false
-		}
-		If ( $WPFInstallspotify.IsChecked -eq $true ) {
-			$wingetarrays.Add("Spotify.Spotify")
-			$WPFInstallspotify.IsChecked = $false
-		}
-		If ( $WPFInstallsteam.IsChecked -eq $true ) {
-			$wingetarrays.Add("Valve.Steam")
-			$WPFInstallsteam.IsChecked = $false
-		}
-		If ( $WPFInstallvoicemeeter.IsChecked -eq $true ) {
-			$wingetarrays.Add("VB-Audio.Voicemeeter")
-			$WPFInstallvoicemeeter.IsChecked = $false
-		}
-		If ( $WPFInstallwindirstat.IsChecked -eq $true ) {
-			$wingetarrays.Add("WinDirStat.WinDirStat")
-			$WPFInstallwindirstat.IsChecked = $false
-		}
-		If ( $WPFInstallzoom.IsChecked -eq $true ) {
-			$wingetarrays.Add("Zoom.Zoom")
-			$WPFInstallzoom.IsChecked = $false
-		}
-
 		$OutputMsg = Show-MessageBox -Message "Yakin? ;) click OK kalo dah yakin beb :v" -Title "Begin Installation" -Buttons 'OKCancel'
 		switch ($OutputMsg) {
-			'OK' {
-				DownloadWithWinget -ItemWingets $wingetarrays.ToArray()
-			}
-			'Cancel' {
-				$wingetarrays.Clear()
-			}
+			'OK' { InitializeDownloadWinget; }
+			'Cancel' { return; }
 		}
 	}
 })
 
-$WPFInstallUpgrade.Add_Click({
+$WPFselectupgrade.Add_Click({
 	Start-Process powershell.exe -Verb RunAs -ArgumentList "-command winget upgrade --all  | Out-Host" -Wait -WindowStyle Maximized
-
-	$ButtonType = [System.Windows.MessageBoxButton]::OK
-	$MessageboxTitle = "Upgraded All Programs "
-	$Messageboxbody = ("Done")
-	$MessageIcon = [System.Windows.MessageBoxImage]::Information
-
-	[System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$MessageIcon)
+	Show-MessageBox -Message "Done Upgrading All Programs!" -Title "Done Upgrade" -Icon 'Information' -Buttons 'OK'
 })
 
+function CheckByIndex([System.Array]$Indexes) {
+	foreach ($Item in $ListCheckBoxes) { $Item.IsChecked = $false; }
+	foreach ($Idx in $Indexes) { $ListCheckBoxes[$Idx].IsChecked = $true; }
+}
 #===========================================================================
 # Tab 2 - Development Tabs
 #===========================================================================
 $WPFembeddev.Add_Click({
-	$WPFInstallgit.IsChecked = $false
-	$WPFInstallwinterm.IsChecked = $false
-	$WPFInstallgithubdesktop.IsChecked = $false
-	$WPFInstalljetbrains.IsChecked = $false
-	$WPFInstallandroidstudio.IsChecked = $false
-	$WPFInstallsublime.IsChecked = $false
-	$WPFInstallvim.IsChecked = $false
-	$WPFInstallneovim.IsChecked = $false
-	$WPFInstallneovide.IsChecked = $false
-	$WPFInstallvisualstudio22.IsChecked = $false
-	$WPFInstallvisualstudio19.IsChecked = $false
-	$WPFInstallcodelite.IsChecked = $false
-	$WPFInstallpycharm.IsChecked = $false
-	$WPFInstallcygwin.IsChecked = $false
-	$WPFInstallmsys2.IsChecked = $false
-	$WPFInstallcmake.IsChecked = $false
-	$WPFInstallvscode.IsChecked = $true
-	$WPFInstallvscodium.IsChecked = $false
-	$WPFInstallpowertoys.IsChecked = $false
-	$WPFInstallwindirstat.IsChecked = $false
-	$WPFInstalladvancedip.IsChecked = $false
-	$WPFInstallmremoteng.IsChecked = $false
-	$WPFInstallputty.IsChecked = $true
-	$WPFInstallscp.IsChecked = $false
-	$WPFInstallwireshark.IsChecked = $false
-	$WPFInstalljava8.IsChecked = $false
-	$WPFInstalljava16.IsChecked = $false
-	$WPFInstalljava18.IsChecked = $false
-	$WPFInstallpython3.IsChecked = $true
-	$WPFInstallnodejs.IsChecked = $false
-	$WPFInstallnodejslts.IsChecked = $true
-	$WPFInstallminiconda.IsChecked = $false
-	$WPFInstallrust.IsChecked = $true
-	$WPFInstallgo.IsChecked = $false
+	$IndexEmbeded = 21,22,42,46,48,50,63
+	CheckByIndex -Indexes $IndexEmbeded
 })
 
 $WPFwebdev.Add_Click({
-	$WPFInstallgit.IsChecked = $false
-	$WPFInstallwinterm.IsChecked = $false
-	$WPFInstallgithubdesktop.IsChecked = $true
-	$WPFInstalljetbrains.IsChecked = $false
-	$WPFInstallandroidstudio.IsChecked = $false
-	$WPFInstallsublime.IsChecked = $false
-	$WPFInstallvim.IsChecked = $false
-	$WPFInstallneovim.IsChecked = $false
-	$WPFInstallneovide.IsChecked = $false
-	$WPFInstallvisualstudio22.IsChecked = $false
-	$WPFInstallvisualstudio19.IsChecked = $false
-	$WPFInstallcodelite.IsChecked = $false
-	$WPFInstallpycharm.IsChecked = $false
-	$WPFInstallcygwin.IsChecked = $false
-	$WPFInstallmsys2.IsChecked = $false
-	$WPFInstallcmake.IsChecked = $false
-	$WPFInstallvscode.IsChecked = $true
-	$WPFInstallvscodium.IsChecked = $false
-	$WPFInstallpowertoys.IsChecked = $true
-	$WPFInstallwindirstat.IsChecked = $false
-	$WPFInstalladvancedip.IsChecked = $false
-	$WPFInstallmremoteng.IsChecked = $false
-	$WPFInstallputty.IsChecked = $true
-	$WPFInstallscp.IsChecked = $false
-	$WPFInstallwireshark.IsChecked = $false
-	$WPFInstalljava8.IsChecked = $false
-	$WPFInstalljava16.IsChecked = $false
-	$WPFInstalljava18.IsChecked = $false
-	$WPFInstallpython3.IsChecked = $false
-	$WPFInstallnodejs.IsChecked = $false
-	$WPFInstallnodejslts.IsChecked = $true
-	$WPFInstallminiconda.IsChecked = $false
-	$WPFInstallrust.IsChecked = $true
-	$WPFInstallgo.IsChecked = $false
+	$IndexWebDev = 21,22,42,48,50,63,45
+	CheckByIndex -Indexes $IndexWebDev
 })
 
 $WPFmobiledev.Add_Click({
-	$WPFInstallgit.IsChecked = $false
-	$WPFInstallwinterm.IsChecked = $false
-	$WPFInstallgithubdesktop.IsChecked = $true
-	$WPFInstalljetbrains.IsChecked = $false
-	$WPFInstallandroidstudio.IsChecked = $true
-	$WPFInstallsublime.IsChecked = $false
-	$WPFInstallvim.IsChecked = $false
-	$WPFInstallneovim.IsChecked = $false
-	$WPFInstallneovide.IsChecked = $false
-	$WPFInstallvisualstudio22.IsChecked = $false
-	$WPFInstallvisualstudio19.IsChecked = $false
-	$WPFInstallcodelite.IsChecked = $false
-	$WPFInstallpycharm.IsChecked = $false
-	$WPFInstallcygwin.IsChecked = $false
-	$WPFInstallmsys2.IsChecked = $false
-	$WPFInstallcmake.IsChecked = $false
-	$WPFInstallvscode.IsChecked = $true
-	$WPFInstallvscodium.IsChecked = $false
-	$WPFInstallpowertoys.IsChecked = $false
-	$WPFInstallwindirstat.IsChecked = $false
-	$WPFInstalladvancedip.IsChecked = $false
-	$WPFInstallmremoteng.IsChecked = $false
-	$WPFInstallputty.IsChecked = $false
-	$WPFInstallscp.IsChecked = $false
-	$WPFInstallwireshark.IsChecked = $false
-	$WPFInstalljava8.IsChecked = $false
-	$WPFInstalljava16.IsChecked = $false
-	$WPFInstalljava18.IsChecked = $false
-	$WPFInstallpython3.IsChecked = $false
-	$WPFInstallnodejs.IsChecked = $false
-	$WPFInstallnodejslts.IsChecked = $false
-	$WPFInstallminiconda.IsChecked = $false
-	$WPFInstallrust.IsChecked = $false
-	$WPFInstallgo.IsChecked = $false
+	$IndexMobileDev = 2,21,22,63
+	CheckByIndex -Indexes $IndexMobileDev
 })
 
 $WPFalldev.Add_Click({
-	$WPFInstallgit.IsChecked = $true
-	$WPFInstallwinterm.IsChecked = $true
-	$WPFInstallgithubdesktop.IsChecked = $true
-	$WPFInstalljetbrains.IsChecked = $true
-	$WPFInstallandroidstudio.IsChecked = $true
-	$WPFInstallsublime.IsChecked = $true
-	$WPFInstallvim.IsChecked = $true
-	$WPFInstallneovim.IsChecked = $true
-	$WPFInstallneovide.IsChecked = $true
-	$WPFInstallvisualstudio22.IsChecked = $true
-	$WPFInstallvisualstudio19.IsChecked = $true
-	$WPFInstallcodelite.IsChecked = $true
-	$WPFInstallpycharm.IsChecked = $true
-	$WPFInstallcygwin.IsChecked = $true
-	$WPFInstallmsys2.IsChecked = $true
-	$WPFInstallcmake.IsChecked = $true
-	$WPFInstallvscode.IsChecked = $true
-	$WPFInstallvscodium.IsChecked = $true
-	$WPFInstallpowertoys.IsChecked = $true
-	$WPFInstallwindirstat.IsChecked = $true
-	$WPFInstalladvancedip.IsChecked = $true
-	$WPFInstallmremoteng.IsChecked = $true
-	$WPFInstallputty.IsChecked = $true
-	$WPFInstallscp.IsChecked = $true
-	$WPFInstallwireshark.IsChecked = $true
-	$WPFInstalljava8.IsChecked = $true
-	$WPFInstalljava16.IsChecked = $true
-	$WPFInstalljava18.IsChecked = $true
-	$WPFInstallpython3.IsChecked = $true
-	$WPFInstallnodejs.IsChecked = $true
-	$WPFInstallnodejslts.IsChecked = $true
-	$WPFInstallminiconda.IsChecked = $true
-	$WPFInstallrust.IsChecked = $true
-	$WPFInstallgo.IsChecked = $true
+	$IndexAll = 0..68
+	CheckByIndex -Indexes $IndexAll
 })
 
-$WPFinstalldev.Add_Click({
+$WPFClickInstalldev.Add_Click({
 	if ((CheckInstalledPrograms -Program "winget") -eq $false)
 	{
 		$MessageArgs = "Winget tidak terinstall di PC ini!..$(
@@ -497,203 +259,30 @@ $WPFinstalldev.Add_Click({
 		Show-MessageBox -Message $MessageArgs  -Title $ErrorArgs -Buttons 'OK' -Icon 'Warning'
 	}
 	else {
-		$wingetarrays = New-Object System.Collections.Generic.List[System.Object]
-		if ( $WPFInstallgit.IsChecked -eq $true )
-		{
-			$wingetarrays.Add("Git.Git")
-			$WPFInstallgit.IsChecked = $false
-		}
-		if ( $WPFInstallwinterm.IsChecked -eq $true )
-		{
-			$wingetarrays.Add("Microsoft.WindowsTerminal")
-			$WPFInstallwinterm.IsChecked = $false
-		}
-		if ( $WPFInstallgithubdesktop.IsChecked -eq $true )
-		{
-			$wingetarrays.Add("Git.Git")
-			$wingetarrays.Add("GitHub.cli")
-			$wingetarrays.Add("GitHub.GitHubDesktop")
-			$WPFInstallgithubdesktop.IsChecked = $false
-		}
-		if ( $WPFInstalljetbrains.IsChecked -eq $true )
-		{
-			$wingetarrays.Add("JetBrains.Toolbox")
-			$WPFInstalljetbrains.IsChecked = $false
-		}
-		if ( $WPFInstallandroidstudio.IsChecked -eq $true )
-		{
-			$wingetarrays.Add("Google.AndroidStudio")
-			$WPFInstallandroidstudio.IsChecked = $false
-		}
-		if ( $WPFInstallsublime.IsChecked -eq $true )
-		{
-			$wingetarrays.Add("SublimeHQ.SublimeText.4")
-			$WPFInstallsublime.IsChecked = $false
-		}
-		if ( $WPFInstallvim.IsChecked -eq $true )
-		{
-			$wingetarrays.Add("vim.vim")
-			$WPFInstallvim.IsChecked = $false
-		}
-		if ( $WPFInstallneovim.IsChecked -eq $true )
-		{
-			$wingetarrays.Add("Neovim.Neovim")
-			$WPFInstallneovim.IsChecked = $false
-		}
-		if ($WPFInstallneovide.IsChecked -eq $true)
-		{
-			Write-Warning "Warning: Neovide tidak tersedia pada repository Winget! Neovide tidak ada terinstall (hanya warning, abaikan saja)"
-			$WPFInstallneovide.IsChecked = $false
-		}
-		if ($WPFInstallvisualstudio22.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Microsoft.VisualStudio.2022.Community")
-			$WPFInstallvisualstudio22.IsChecked = $false
-		}
-		if ($WPFInstallvisualstudio19.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Microsoft.VisualStudio.2019.Community")
-			$WPFInstallvisualstudio19.IsChecked = $false
-		}
-		if ($WPFInstallcodelite.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("CodeLite.CodeLite")
-			$WPFInstallcodelite.IsChecked = $false
-		}
-		if ($WPFInstallpycharm.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("JetBrains.PyCharm.Community")
-			$WPFInstallpycharm.IsChecked = $false
-		}
-		if ($WPFInstallcygwin.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Cygwin.Cygwin")
-			$WPFInstallcygwin.IsChecked = $false
-		}
-		if ($WPFInstallmsys2.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("msys2.msys2")
-			$WPFInstallmsys2.IsChecked = $false
-		}
-		if ($WPFInstallcmake.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Kitware.CMake")
-			$WPFInstallcmake.IsChecked = $false
-		}
-		if ($WPFInstallvscode.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Git.Git")
-			$wingetarrays.Add("Microsoft.VisualStudioCode --source winget")
-			$WPFInstallvscode.IsChecked = $false
-		}
-		if ($WPFInstallvscodium.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Git.Git")
-			$wingetarrays.Add("VSCodium.VSCodium")
-			$WPFInstallvscodium.IsChecked = $false
-		}
-		if ($WPFInstallpowertoys.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Microsoft.PowerToys --source winget")
-			$WPFInstallpowertoys.IsChecked = $false
-		}
-		if ($WPFInstallwindirstat.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("WinDirStat.WinDirStat")
-			$WPFInstallwindirstat.IsChecked = $false
-		}
-		if ($WPFInstalladvancedip.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Famatech.AdvancedIPScanner")
-			$WPFInstalladvancedip.IsChecked = $false
-		}
-		if ($WPFInstallmremoteng.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("mRemoteNG.mRemoteNG")
-			$WPFInstallmremoteng.IsChecked = $false
-		}
-		if ($WPFInstallscp.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("WinSCP.WinSCP")
-			$WPFInstallscp.IsChecked = $false
-			$WPFInstallputty.IsChecked = $false
-		}
-		if ($WPFInstallputty.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("PuTTY.PuTTY --source winget")
-			$WPFInstallputty.IsChecked = $false
-		}
-		if ($WPFInstallwireshark.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("WiresharkFoundation.Wireshark")
-			$WPFInstallwireshark.IsChecked = $false
-		}
-		if ($WPFInstalljava8.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("AdoptOpenJDK.OpenJDK.8")
-			$WPFInstalljava8.IsChecked = $false
-		}
-		if ($WPFInstalljava16.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("AdoptOpenJDK.OpenJDK.16")
-			$WPFInstalljava16.IsChecked = $false
-		}
-		if ($WPFInstalljava18.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("AdoptOpenJDK.OpenJDK.16")
-			$WPFInstalljava18.IsChecked = $false
-		}
-		if ($WPFInstallpython3.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Python.Python.3")
-			$WPFInstallpython3.IsChecked = $false
-		}
-		if ($WPFInstallnodejs.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("OpenJS.NodeJS")
-			$WPFInstallnodejs.IsChecked = $false
-		}
-		if ($WPFInstallnodejslts.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("OpenJS.NodeJS.LTS")
-			$WPFInstallnodejslts.IsChecked = $false
-		}
-		if ($WPFInstallminiconda.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Anaconda.Miniconda3")
-			$WPFInstallminiconda.IsChecked = $false
-		}
-		if ($WPFInstallrust.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("Rustlang.Rust.MSVC")
-			$WPFInstallrust.IsChecked = $false
-		}
-		if ($WPFInstallgo.IsChecked -eq $true)
-		{
-			$wingetarrays.Add("GoLang.Go")
-			$WPFInstallgo.IsChecked = $false
-		}
-
 		$OutputMsg = Show-MessageBox -Message "Yakin? ;) click OK kalo dah yakin beb :v" -Title "Begin Installation" -Buttons 'OKCancel'
 		switch ($OutputMsg) {
-			'OK' {
-				DownloadWithWinget -ItemWingets $wingetarrays.ToArray()
-			}
-			'Cancel' {
-				$wingetarrays.Clear()
-			}
+			'OK' { InitializeDownloadWinget; }
+			'Cancel' { return; }
 		}
 	}
 })
 $RSGWingets = @(
+	"Git.Git",
 	"Python.Python.3",
 	"OpenJS.NodeJS.LTS",
 	"PuTTY.PuTTY --source winget",
-	"Git.Git",
+	"GitHub.GitHubDesktop",
 	"Microsoft.VisualStudioCode --source winget"
 )
+
+# TODO!
 $RSGAria2c = @(
-	# TODO!
+	"https://github.com/git-for-windows/git/releases/download/v2.37.1.windows.1/Git-2.37.1-64-bit.exe",
+	"https://www.python.org/ftp/python/3.10.5/python-3.10.5-amd64.exe",
+	"https://nodejs.org/dist/v16.16.0/node-v16.16.0-x64.msi",
+	"https://the.earth.li/~sgtatham/putty/latest/w64/putty-64bit-0.77-installer.msi",
+	"https://central.github.com/deployments/desktop/desktop/latest/win32",
+	"https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user"
 )
 $WPFReadySetGo.Add_Click({
 	$IsUsingWinget = $true
@@ -715,8 +304,24 @@ $WPFReadySetGo.Add_Click({
 		}
 	}
 	if ($IsUsingWinget -eq $true) {
-		DownloadWithWinget -ItemWingets $RSGWingets
+		$ListWinget = New-Object System.Collections.Generic.List[System.Object]
+		$ExecIdentifier = @("git", "python", "node", "putty", "code")
+		$Idx = 0
+		foreach ($Exe in $ExecIdentifier) {
+			if ((CheckInstalledPrograms -Program $Exe) -eq $false) { continue; }
+			else { ListWinget.Add($RSGWingets[$Idx]); }
+			$Idx++
+		}
+		DownloadWithWinget -ItemWingets $ListWinget
 	} else {
+		$ListWinget = New-Object System.Collections.Generic.List[System.Object]
+		$ExecIdentifier = @("git", "python", "node", "putty", "code")
+		$Idx = 0
+		foreach ($Exe in $ExecIdentifier) {
+			if ((CheckInstalledPrograms -Program $Exe) -eq $false) { continue; }
+			else { ListWinget.Add($RSGWingets[$Idx]); }
+			$Idx++
+		}
 		DownloadWithAria -ItemArias $RSGAria2c
 	}
 })

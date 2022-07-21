@@ -118,7 +118,7 @@
 
 						</StackPanel>
 						<StackPanel Background="#212121" HorizontalAlignment="Center" Grid.ColumnSpan="3" Orientation="Horizontal" Grid.Row="1" Margin="10,0,10,10">
-							<Button Name="install"
+							<Button Name="selectinstall"
 								Content="Install Selected"
 								Width="200"
 								Height="30"
@@ -128,7 +128,7 @@
 								Foreground="#ffffff"
 								ToolTip="Install all checked programs"
 							/>
-							<Button Name="InstallUpgrade"
+							<Button Name="selectupgrade"
 								Content="Upgrade Installed App"
 								Width="200"
 								Height="30"
@@ -220,7 +220,6 @@
 							<CheckBox Name="Installsublime" Content="Sublime" Margin="5,0" Foreground="White"/>
 							<CheckBox Name="Installvim" Content="vim text editor" Margin="5,0" Foreground="White"/>
 							<CheckBox Name="Installneovim" Content="NeoVim text editor" Margin="5,0" Foreground="White"/>
-							<CheckBox Name="Installneovide" Content="NeoVim Gui (neovide)" Margin="5,0" Foreground="White"/>
 							<CheckBox Name="Installvisualstudio22" Content="Visual Studio 2022 Community" Margin="5,0" Foreground="White"/>
 							<CheckBox Name="Installvisualstudio19" Content="Visual Studio 2019 Community" Margin="5,0" Foreground="White"/>
 						</StackPanel>
@@ -237,7 +236,7 @@
 							<CheckBox Name="Installgo" Content="Go Lang" Margin="5,0" Foreground="White"/>
 						</StackPanel>
 						<StackPanel Background="#37474F" Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Center" Grid.ColumnSpan="3" Margin="10,0,10,10">
-							<Button Name="installdev"
+							<Button Name="ClickInstalldev"
 								Content="Install Selected"
 								Width="300"
 								Height="20"
