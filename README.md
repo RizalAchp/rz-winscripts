@@ -1,11 +1,7 @@
 # App Installer Script for Windows
 
 ## HOW TO USE
-**run this on powershell**
-```powershell
-Set-ExecutionPolicy Unrestricted -Force
-```
-**then, just run this on your powershell:**
+**just run this on your powershell:**
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force;iwr -useb https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/install.ps1 | iex
 ```
