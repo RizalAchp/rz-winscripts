@@ -4,6 +4,43 @@
    GitHub      : https://github.com/RizalAchp/rz-winscripts
     Version 0.0.1
 #>
+$CURRDIR = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('.\')
+Write-Host $CURRDIR
+
+$inputXML = Get-Content "MainWindow.xaml" #uncomment for development
+# $inputXML = (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/MainWindow.xaml") #uncomment for Production
+
+$inputXML = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:N",'N' -replace '^<Win.*', '<Window'
+[void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
+[xml]$XAML = $inputXML
+#Read XAML
+
+$reader=(New-Object System.Xml.XmlNodeReader $xaml)
+try{$Form=[Windows.Markup.XamlReader]::Load( $reader )}
+catch [System.Management.Automation.MethodInvocationException] {
+	Write-Warning "We ran into a problem with the XAML code.  Check the syntax for this control..."
+	write-host $error[0].Exception.Message -ForegroundColor Red
+	If ($error[0].Exception.Message -like "*button*") {
+		write-warning "Ensure your &lt;button in the `$inputXML does NOT have a Click=ButtonClick property.  PS can't handle this`n`n`n`n"
+	}
+}
+catch{# If it broke some other way <img draggable="false" role="img" class="emoji" alt="😀" src="https://s0.wp.com/wp-content/mu-plugins/wpcom-smileys/twemoji/2/svg/1f600.svg">
+	Write-Host "Unable to load Windows.Markup.XamlReader. Double-check syntax and ensure .net is installed."
+		}
+
+#===========================================================================
+# Store Form Objects In PowerShell
+#===========================================================================
+
+$xaml.SelectNodes("//*[@Name]") | ForEach-Object{Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
+
+Function Get-FormVariables{
+	If ($global:ReadmeDisplay -ne $true){
+		Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow;$global:ReadmeDisplay=$true
+	}
+	write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
+	get-variable WPF*
+}
 
 function Show-MessageBox {
   [CmdletBinding(PositionalBinding=$false)]
@@ -18,70 +55,45 @@ function Show-MessageBox {
     [ValidateSet('Information', 'Warning', 'Stop')]
     [string] $Icon = 'Information',
     [ValidateSet(0, 1, 2)]
-    [int] $DefaultButtonIndex
+    [int] $DefBtnIdx
   )
-
-  Set-StrictMode -Off
-  $buttonMap = @{
-    'OK'               = @{ buttonList = 'OK'; defaultButtonIndex = 0 }
-    'OKCancel'         = @{ buttonList = 'OK', 'Cancel'; defaultButtonIndex = 0; cancelButtonIndex = 1 }
-    'AbortRetryIgnore' = @{ buttonList = 'Abort', 'Retry', 'Ignore'; defaultButtonIndex = 2; ; cancelButtonIndex = 0 };
-    'YesNoCancel'      = @{ buttonList = 'Yes', 'No', 'Cancel'; defaultButtonIndex = 2; cancelButtonIndex = 2 };
-    'YesNo'            = @{ buttonList = 'Yes', 'No'; defaultButtonIndex = 0; cancelButtonIndex = 1 }
-    'RetryCancel'      = @{ buttonList = 'Retry', 'Cancel'; defaultButtonIndex = 0; cancelButtonIndex = 1 }
-  }
-
-  $numButtons = $buttonMap[$Buttons].buttonList.Count
-  $defaultIndex = [math]::Min($numButtons - 1, ($buttonMap[$Buttons].defaultButtonIndex, $DefaultButtonIndex)[$PSBoundParameters.ContainsKey('DefaultButtonIndex')])
-  $cancelIndex = $buttonMap[$Buttons].cancelButtonIndex
-
-  if ($IsLinux) {
-    Throw "Not supported on Linux."
-  }
-  elseif ($IsMacOS) {
-
-    $iconClause = if ($Icon -ne 'Information') { 'as ' + $Icon -replace 'Stop', 'critical' }
-    $buttonClause = "buttons { $($buttonMap[$Buttons].buttonList -replace '^', '"' -replace '$', '"' -join ',') }"
-
-    $defaultButtonClause = 'default button ' + (1 + $defaultIndex)
-    if ($null -ne $cancelIndex -and $cancelIndex -ne $defaultIndex) {
-      $cancelButtonClause = 'cancel button ' + (1 + $cancelIndex)
-    }
-    $appleScript = "display alert `"$Title`" message `"$Message`" $iconClause $buttonClause $defaultButtonClause $cancelButtonClause"            #"
-    Write-Verbose "AppleScript command: $appleScript"
-    $result = $appleScript | osascript 2>$null
-    if (-not $result) { $buttonMap[$Buttons].buttonList[$buttonMap[$Buttons].cancelButtonIndex] } else { $result -replace '.+:' }
-  }
-  else { # Windows
+	Set-StrictMode -Off
+	$btnMap = @{
+	'OK'               = @{ buttonList = 'OK'; defBtnIdx = 0 }
+	'OKCancel'         = @{ buttonList = 'OK', 'Cancel'; defBtnIdx = 0; cancelButtonIndex = 1 }
+	'AbortRetryIgnore' = @{ buttonList = 'Abort', 'Retry', 'Ignore'; defBtnIdx = 2; ; cancelButtonIndex = 0 };
+	'YesNoCancel'      = @{ buttonList = 'Yes', 'No', 'Cancel'; defBtnIdx = 2; cancelButtonIndex = 2 };
+	'YesNo'            = @{ buttonList = 'Yes', 'No'; defBtnIdx = 0; cancelButtonIndex = 1 }
+	'RetryCancel'      = @{ buttonList = 'Retry', 'Cancel'; defBtnIdx = 0; cancelButtonIndex = 1 }
+	}
+	$numButtons = $btnMap[$Buttons].buttonList.Count
+	$defIdx = [math]::Min($numButtons - 1, ($btnMap[$Buttons].defBtnIdx, $DefBtnIdx)[$PSBoundParameters.ContainsKey('DefBtnIdx')])
     Add-Type -Assembly System.Windows.Forms
-    [System.Windows.Forms.MessageBox]::Show($Message, $Title, $Buttons, $Icon, $defaultIndex * 256).ToString()
-  }
-
+    [System.Windows.Forms.MessageBox]::Show($Message, $Title, $Buttons, $Icon, $defIdx * 256).ToString()
 }
 
-function Check-Installed-Programs([string]$Program)
+function CheckInstalledPrograms([string]$Program)
 {
 	Get-Command -Name $Program -ErrorAction SilentlyContinue -ErrorVariable CommandNotAvailableError;
 	if ($CommandNotAvailableError) {
-		Show-MessageBox -Message "program '$Program' is not installed in this machine! install it first! then run this programs again!" -Title "Error: Winget not Installed" -Buttons 'OK' -Icon 'Warning'
 		return $false
 	}
-	Write-Host "Program: '$Program' found, Continue the scripts.."
 	return $true
 }
 
 #===========================================================================
 # install function - Install
 #===========================================================================
-function Download-Winget([array]$itemwingets) {
+function DownloadWithWinget([System.Array]$ItemWingets) {
 	$wingetResult = New-Object System.Collections.Generic.List[System.Object]
-	foreach ( $item in $itemwingets )
+	foreach ( $item in $ItemWingets )
 	{
-		Start-Process powershell.exe -Verb RunAs -ArgumentList "-command winget install -e --accept-source-agreements --accept-package-agreements --silent $item | Out-Host" -Wait -WindowStyle Maximized
+		$ArgList = "-command winget install -e --accept-source-agreements --accept-package-agreements $item | Out-Host"
+		Start-Process powershell.exe -Verb RunAs -ArgumentList $ArgList -Wait -WindowStyle Maximized
 		$wingetResult.Add("$item`n")
 	}
 	$wingetResult.ToArray()
-	$wingetResult | % { $_ } | Out-Host
+	$wingetResult | ForEach-Object { $_ } | Out-Host
 
 	$ButtonType = [System.Windows.MessageBoxButton]::OK
 	$MessageboxTitle = "Installed Programs "
@@ -91,59 +103,104 @@ function Download-Winget([array]$itemwingets) {
 	[System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$MessageIcon)
 }
 
-if ((Check-Installed-Programs -Program "winget") -eq $true)
+function DownloadWithHttpWeb
 {
-	# $inputXML = Get-Content "MainWindow.xaml" #uncomment for development
-	$inputXML = (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/MainWindow.xaml") #uncomment for Production
-
-	$inputXML = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:N",'N' -replace '^<Win.*', '<Window'
-	[void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
-	[xml]$XAML = $inputXML
-	#Read XAML
-
-	$reader=(New-Object System.Xml.XmlNodeReader $xaml)
-	try{$Form=[Windows.Markup.XamlReader]::Load( $reader )}
-	catch [System.Management.Automation.MethodInvocationException] {
-		Write-Warning "We ran into a problem with the XAML code.  Check the syntax for this control..."
-		write-host $error[0].Exception.Message -ForegroundColor Red
-		If ($error[0].Exception.Message -like "*button*") {
-			write-warning "Ensure your &lt;button in the `$inputXML does NOT have a Click=ButtonClick property.  PS can't handle this`n`n`n`n"
-		}
+    param (
+        [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [System.Uri]
+        $Uri,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [System.IO.FileInfo]
+        $TargetFile = "nul",
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [Int32]
+        $BufferSize = 1,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [ValidateSet('KB, MB')]
+        [String]
+        $BufferUnit = 'MB',
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [ValidateSet('KB, MB')]
+        [Int32]
+        $Timeout = 10000
+    )
+	if ($TargetFile.Name -eq "nul") {
+		$TargetFile = [System.IO.FileInfo]"$env:TMP\$($Uri.Segments[$Uri.Segments.Count -1])"
 	}
-	catch{# If it broke some other way <img draggable="false" role="img" class="emoji" alt="😀" src="https://s0.wp.com/wp-content/mu-plugins/wpcom-smileys/twemoji/2/svg/1f600.svg">
-		Write-Host "Unable to load Windows.Markup.XamlReader. Double-check syntax and ensure .net is installed."
-			}
-
-	#===========================================================================
-	# Store Form Objects In PowerShell
-	#===========================================================================
-
-	$xaml.SelectNodes("//*[@Name]") | %{Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
-
-	Function Get-FormVariables{
-	If ($global:ReadmeDisplay -ne $true){Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow;$global:ReadmeDisplay=$true}
-	write-host "Found the following interactable elements from our form" -ForegroundColor Cyan
-	get-variable WPF*
+	$ListTarget += $TargetFile
+	Write-Output "Processing to download $TargetFile from $Uri"
+	$request = [System.Net.HttpWebRequest]::Create($Uri)
+	$request.set_Timeout($Timeout) #15 second timeout
+	$response = $request.GetResponse()
+	$totalLength = [System.Math]::Floor($response.get_ContentLength() / 1024)
+	$responseStream = $response.GetResponseStream()
+	$targetStream = New-Object -TypeName ([System.IO.FileStream]) -ArgumentList "$($TargetFile.FullName)", Create
+	switch ($BufferUnit)
+	{
+		'KB' { $BufferSize = $BufferSize * 1024 }
+		'MB' { $BufferSize = $BufferSize * 1024 * 1024 }
+		Default { $BufferSize = 1024 * 1024 }
+	}
+	Write-Verbose -Message "Buffer size: $BufferSize B ($($BufferSize/("1$BufferUnit")) $BufferUnit)"
+	$buffer = New-Object byte[] $BufferSize
+	$count = $responseStream.Read($buffer, 0, $buffer.length)
+	$downloadedBytes = $count
+	$downloadedFileName = $Uri -split '/' | Select-Object -Last 1
+	while ($count -gt 0)
+	{
+		$targetStream.Write($buffer, 0, $count)
+		$count = $responseStream.Read($buffer, 0, $buffer.length)
+		$downloadedBytes = $downloadedBytes + $count
+		Write-Progress -Activity "Downloading file '$downloadedFileName'" -Status "Downloaded ($([System.Math]::Floor($downloadedBytes/1024))K of $($totalLength)K): " -PercentComplete ((([System.Math]::Floor($downloadedBytes / 1024)) / $totalLength) * 100)
 	}
 
-	Get-FormVariables
+	Write-Progress -Activity "Finished downloading file '$downloadedFileName'"
 
-	#===========================================================================
-	# Navigation Controls
-	#===========================================================================
-	$WPFTab1BT.Add_Click({
-		$WPFTabNav.Items[0].IsSelected = $true
-		$WPFTabNav.Items[1].IsSelected = $false
-	})
-	$WPFTab2BT.Add_Click({
-		$WPFTabNav.Items[0].IsSelected = $false
-		$WPFTabNav.Items[1].IsSelected = $true
-	})
+	$targetStream.Flush()
+	$targetStream.Close()
+	$targetStream.Dispose()
+	$responseStream.Dispose()
+}
 
-	#===========================================================================
-	# Tab 1 - Install
-	#===========================================================================
-	$WPFinstall.Add_Click({
+
+#===========================================================================
+# Navigation Controls
+#===========================================================================
+$WPFTab1BT.Add_Click({
+	$WPFTabNav.Items[0].IsSelected = $true
+	$WPFTabNav.Items[1].IsSelected = $false
+	$WPFTabNav.Items[2].IsSelected = $false
+})
+$WPFTab2BT.Add_Click({
+	$WPFTabNav.Items[0].IsSelected = $false
+	$WPFTabNav.Items[1].IsSelected = $true
+	$WPFTabNav.Items[2].IsSelected = $false
+})
+$WPFTab3BT.Add_Click({
+	$WPFTabNav.Items[0].IsSelected = $false
+	$WPFTabNav.Items[1].IsSelected = $false
+	$WPFTabNav.Items[2].IsSelected = $true
+})
+
+#===========================================================================
+# Tab 1 - Install
+#===========================================================================
+$WPFinstall.Add_Click({
+	if ((CheckInstalledPrograms -Program "winget") -eq $false)
+	{
+		$MessageArgs = "Winget tidak terinstall di PC ini!..$(
+		)PAKE WINDOWS BAJAKAN YA..WKWK..$(
+		)Kamu tidak dapat menginstal program pada bagian ini $(
+		)jika tidak memiliki Winget! Mungkin Pada TAB: MYCHOICE bisa membantu!"
+		$ErrorArgs = "Warning: Winget not Installed"
+		Show-MessageBox -Message $MessageArgs  -Title $ErrorArgs -Buttons 'OK' -Icon 'Warning'
+	}
+	else {
 		$wingetarrays = New-Object System.Collections.Generic.List[System.Object]
 		If ( $WPFInstalladobe.IsChecked -eq $true ) {
 			$wingetarrays.Add("Adobe.Acrobat.Reader.64-bit")
@@ -288,178 +345,189 @@ if ((Check-Installed-Programs -Program "winget") -eq $true)
 
 		$OutputMsg = Show-MessageBox -Message "Yakin? ;) click OK kalo dah yakin beb :v" -Title "Begin Installation" -Buttons 'OKCancel'
 		switch ($OutputMsg) {
-			'Yes' {
-				Download-Winget $wingetarrays.ToArray()
+			'OK' {
+				DownloadWithWinget -ItemWingets $wingetarrays.ToArray()
 			}
 			'Cancel' {
 				$wingetarrays.Clear()
 			}
 		}
-	})
+	}
+})
 
-	$WPFInstallUpgrade.Add_Click({
-		Start-Process powershell.exe -Verb RunAs -ArgumentList "-command winget upgrade --all  | Out-Host" -Wait -WindowStyle Maximized
+$WPFInstallUpgrade.Add_Click({
+	Start-Process powershell.exe -Verb RunAs -ArgumentList "-command winget upgrade --all  | Out-Host" -Wait -WindowStyle Maximized
 
-		$ButtonType = [System.Windows.MessageBoxButton]::OK
-		$MessageboxTitle = "Upgraded All Programs "
-		$Messageboxbody = ("Done")
-		$MessageIcon = [System.Windows.MessageBoxImage]::Information
+	$ButtonType = [System.Windows.MessageBoxButton]::OK
+	$MessageboxTitle = "Upgraded All Programs "
+	$Messageboxbody = ("Done")
+	$MessageIcon = [System.Windows.MessageBoxImage]::Information
 
-		[System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$MessageIcon)
-	})
+	[System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$MessageIcon)
+})
 
-	#===========================================================================
-	# Tab 2 - Development Tabs
-	#===========================================================================
-	$WPFembeddev.Add_Click({
-		$WPFInstallgit.IsChecked = $false
-		$WPFInstallwinterm.IsChecked = $false
-		$WPFInstallgithubdesktop.IsChecked = $false
-		$WPFInstalljetbrains.IsChecked = $false
-		$WPFInstallandroidstudio.IsChecked = $false
-		$WPFInstallsublime.IsChecked = $false
-		$WPFInstallvim.IsChecked = $false
-		$WPFInstallneovim.IsChecked = $false
-		$WPFInstallneovide.IsChecked = $false
-		$WPFInstallvisualstudio22.IsChecked = $false
-		$WPFInstallvisualstudio19.IsChecked = $false
-		$WPFInstallcodelite.IsChecked = $false
-		$WPFInstallpycharm.IsChecked = $false
-		$WPFInstallcygwin.IsChecked = $false
-		$WPFInstallmsys2.IsChecked = $false
-		$WPFInstallcmake.IsChecked = $false
-		$WPFInstallvscode.IsChecked = $true
-		$WPFInstallvscodium.IsChecked = $false
-		$WPFInstallpowertoys.IsChecked = $false
-		$WPFInstallwindirstat.IsChecked = $false
-		$WPFInstalladvancedip.IsChecked = $false
-		$WPFInstallmremoteng.IsChecked = $false
-		$WPFInstallputty.IsChecked = $true
-		$WPFInstallscp.IsChecked = $false
-		$WPFInstallwireshark.IsChecked = $false
-		$WPFInstalljava8.IsChecked = $false
-		$WPFInstalljava16.IsChecked = $false
-		$WPFInstalljava18.IsChecked = $false
-		$WPFInstallpython3.IsChecked = $true
-		$WPFInstallnodejs.IsChecked = $false
-		$WPFInstallnodejslts.IsChecked = $true
-		$WPFInstallminiconda.IsChecked = $false
-		$WPFInstallrust.IsChecked = $true
-		$WPFInstallgo.IsChecked = $false
-	})
+#===========================================================================
+# Tab 2 - Development Tabs
+#===========================================================================
+$WPFembeddev.Add_Click({
+	$WPFInstallgit.IsChecked = $false
+	$WPFInstallwinterm.IsChecked = $false
+	$WPFInstallgithubdesktop.IsChecked = $false
+	$WPFInstalljetbrains.IsChecked = $false
+	$WPFInstallandroidstudio.IsChecked = $false
+	$WPFInstallsublime.IsChecked = $false
+	$WPFInstallvim.IsChecked = $false
+	$WPFInstallneovim.IsChecked = $false
+	$WPFInstallneovide.IsChecked = $false
+	$WPFInstallvisualstudio22.IsChecked = $false
+	$WPFInstallvisualstudio19.IsChecked = $false
+	$WPFInstallcodelite.IsChecked = $false
+	$WPFInstallpycharm.IsChecked = $false
+	$WPFInstallcygwin.IsChecked = $false
+	$WPFInstallmsys2.IsChecked = $false
+	$WPFInstallcmake.IsChecked = $false
+	$WPFInstallvscode.IsChecked = $true
+	$WPFInstallvscodium.IsChecked = $false
+	$WPFInstallpowertoys.IsChecked = $false
+	$WPFInstallwindirstat.IsChecked = $false
+	$WPFInstalladvancedip.IsChecked = $false
+	$WPFInstallmremoteng.IsChecked = $false
+	$WPFInstallputty.IsChecked = $true
+	$WPFInstallscp.IsChecked = $false
+	$WPFInstallwireshark.IsChecked = $false
+	$WPFInstalljava8.IsChecked = $false
+	$WPFInstalljava16.IsChecked = $false
+	$WPFInstalljava18.IsChecked = $false
+	$WPFInstallpython3.IsChecked = $true
+	$WPFInstallnodejs.IsChecked = $false
+	$WPFInstallnodejslts.IsChecked = $true
+	$WPFInstallminiconda.IsChecked = $false
+	$WPFInstallrust.IsChecked = $true
+	$WPFInstallgo.IsChecked = $false
+})
 
-	$WPFwebdev.Add_Click({
-		$WPFInstallgit.IsChecked = $false
-		$WPFInstallwinterm.IsChecked = $false
-		$WPFInstallgithubdesktop.IsChecked = $true
-		$WPFInstalljetbrains.IsChecked = $false
-		$WPFInstallandroidstudio.IsChecked = $false
-		$WPFInstallsublime.IsChecked = $false
-		$WPFInstallvim.IsChecked = $false
-		$WPFInstallneovim.IsChecked = $false
-		$WPFInstallneovide.IsChecked = $false
-		$WPFInstallvisualstudio22.IsChecked = $false
-		$WPFInstallvisualstudio19.IsChecked = $false
-		$WPFInstallcodelite.IsChecked = $false
-		$WPFInstallpycharm.IsChecked = $false
-		$WPFInstallcygwin.IsChecked = $false
-		$WPFInstallmsys2.IsChecked = $false
-		$WPFInstallcmake.IsChecked = $false
-		$WPFInstallvscode.IsChecked = $true
-		$WPFInstallvscodium.IsChecked = $false
-		$WPFInstallpowertoys.IsChecked = $true
-		$WPFInstallwindirstat.IsChecked = $false
-		$WPFInstalladvancedip.IsChecked = $false
-		$WPFInstallmremoteng.IsChecked = $false
-		$WPFInstallputty.IsChecked = $true
-		$WPFInstallscp.IsChecked = $false
-		$WPFInstallwireshark.IsChecked = $false
-		$WPFInstalljava8.IsChecked = $false
-		$WPFInstalljava16.IsChecked = $false
-		$WPFInstalljava18.IsChecked = $false
-		$WPFInstallpython3.IsChecked = $false
-		$WPFInstallnodejs.IsChecked = $false
-		$WPFInstallnodejslts.IsChecked = $true
-		$WPFInstallminiconda.IsChecked = $false
-		$WPFInstallrust.IsChecked = $true
-		$WPFInstallgo.IsChecked = $false
-	})
+$WPFwebdev.Add_Click({
+	$WPFInstallgit.IsChecked = $false
+	$WPFInstallwinterm.IsChecked = $false
+	$WPFInstallgithubdesktop.IsChecked = $true
+	$WPFInstalljetbrains.IsChecked = $false
+	$WPFInstallandroidstudio.IsChecked = $false
+	$WPFInstallsublime.IsChecked = $false
+	$WPFInstallvim.IsChecked = $false
+	$WPFInstallneovim.IsChecked = $false
+	$WPFInstallneovide.IsChecked = $false
+	$WPFInstallvisualstudio22.IsChecked = $false
+	$WPFInstallvisualstudio19.IsChecked = $false
+	$WPFInstallcodelite.IsChecked = $false
+	$WPFInstallpycharm.IsChecked = $false
+	$WPFInstallcygwin.IsChecked = $false
+	$WPFInstallmsys2.IsChecked = $false
+	$WPFInstallcmake.IsChecked = $false
+	$WPFInstallvscode.IsChecked = $true
+	$WPFInstallvscodium.IsChecked = $false
+	$WPFInstallpowertoys.IsChecked = $true
+	$WPFInstallwindirstat.IsChecked = $false
+	$WPFInstalladvancedip.IsChecked = $false
+	$WPFInstallmremoteng.IsChecked = $false
+	$WPFInstallputty.IsChecked = $true
+	$WPFInstallscp.IsChecked = $false
+	$WPFInstallwireshark.IsChecked = $false
+	$WPFInstalljava8.IsChecked = $false
+	$WPFInstalljava16.IsChecked = $false
+	$WPFInstalljava18.IsChecked = $false
+	$WPFInstallpython3.IsChecked = $false
+	$WPFInstallnodejs.IsChecked = $false
+	$WPFInstallnodejslts.IsChecked = $true
+	$WPFInstallminiconda.IsChecked = $false
+	$WPFInstallrust.IsChecked = $true
+	$WPFInstallgo.IsChecked = $false
+})
 
-	$WPFmobiledev.Add_Click({
-		$WPFInstallgit.IsChecked = $false
-		$WPFInstallwinterm.IsChecked = $false
-		$WPFInstallgithubdesktop.IsChecked = $true
-		$WPFInstalljetbrains.IsChecked = $false
-		$WPFInstallandroidstudio.IsChecked = $true
-		$WPFInstallsublime.IsChecked = $false
-		$WPFInstallvim.IsChecked = $false
-		$WPFInstallneovim.IsChecked = $false
-		$WPFInstallneovide.IsChecked = $false
-		$WPFInstallvisualstudio22.IsChecked = $false
-		$WPFInstallvisualstudio19.IsChecked = $false
-		$WPFInstallcodelite.IsChecked = $false
-		$WPFInstallpycharm.IsChecked = $false
-		$WPFInstallcygwin.IsChecked = $false
-		$WPFInstallmsys2.IsChecked = $false
-		$WPFInstallcmake.IsChecked = $false
-		$WPFInstallvscode.IsChecked = $true
-		$WPFInstallvscodium.IsChecked = $false
-		$WPFInstallpowertoys.IsChecked = $false
-		$WPFInstallwindirstat.IsChecked = $false
-		$WPFInstalladvancedip.IsChecked = $false
-		$WPFInstallmremoteng.IsChecked = $false
-		$WPFInstallputty.IsChecked = $false
-		$WPFInstallscp.IsChecked = $false
-		$WPFInstallwireshark.IsChecked = $false
-		$WPFInstalljava8.IsChecked = $false
-		$WPFInstalljava16.IsChecked = $false
-		$WPFInstalljava18.IsChecked = $false
-		$WPFInstallpython3.IsChecked = $false
-		$WPFInstallnodejs.IsChecked = $false
-		$WPFInstallnodejslts.IsChecked = $false
-		$WPFInstallminiconda.IsChecked = $false
-		$WPFInstallrust.IsChecked = $false
-		$WPFInstallgo.IsChecked = $false
-	})
+$WPFmobiledev.Add_Click({
+	$WPFInstallgit.IsChecked = $false
+	$WPFInstallwinterm.IsChecked = $false
+	$WPFInstallgithubdesktop.IsChecked = $true
+	$WPFInstalljetbrains.IsChecked = $false
+	$WPFInstallandroidstudio.IsChecked = $true
+	$WPFInstallsublime.IsChecked = $false
+	$WPFInstallvim.IsChecked = $false
+	$WPFInstallneovim.IsChecked = $false
+	$WPFInstallneovide.IsChecked = $false
+	$WPFInstallvisualstudio22.IsChecked = $false
+	$WPFInstallvisualstudio19.IsChecked = $false
+	$WPFInstallcodelite.IsChecked = $false
+	$WPFInstallpycharm.IsChecked = $false
+	$WPFInstallcygwin.IsChecked = $false
+	$WPFInstallmsys2.IsChecked = $false
+	$WPFInstallcmake.IsChecked = $false
+	$WPFInstallvscode.IsChecked = $true
+	$WPFInstallvscodium.IsChecked = $false
+	$WPFInstallpowertoys.IsChecked = $false
+	$WPFInstallwindirstat.IsChecked = $false
+	$WPFInstalladvancedip.IsChecked = $false
+	$WPFInstallmremoteng.IsChecked = $false
+	$WPFInstallputty.IsChecked = $false
+	$WPFInstallscp.IsChecked = $false
+	$WPFInstallwireshark.IsChecked = $false
+	$WPFInstalljava8.IsChecked = $false
+	$WPFInstalljava16.IsChecked = $false
+	$WPFInstalljava18.IsChecked = $false
+	$WPFInstallpython3.IsChecked = $false
+	$WPFInstallnodejs.IsChecked = $false
+	$WPFInstallnodejslts.IsChecked = $false
+	$WPFInstallminiconda.IsChecked = $false
+	$WPFInstallrust.IsChecked = $false
+	$WPFInstallgo.IsChecked = $false
+})
 
-	$WPFalldev.Add_Click({
-		$WPFInstallgit.IsChecked = $true
-		$WPFInstallwinterm.IsChecked = $true
-		$WPFInstallgithubdesktop.IsChecked = $true
-		$WPFInstalljetbrains.IsChecked = $true
-		$WPFInstallandroidstudio.IsChecked = $true
-		$WPFInstallsublime.IsChecked = $true
-		$WPFInstallvim.IsChecked = $true
-		$WPFInstallneovim.IsChecked = $true
-		$WPFInstallneovide.IsChecked = $true
-		$WPFInstallvisualstudio22.IsChecked = $true
-		$WPFInstallvisualstudio19.IsChecked = $true
-		$WPFInstallcodelite.IsChecked = $true
-		$WPFInstallpycharm.IsChecked = $true
-		$WPFInstallcygwin.IsChecked = $true
-		$WPFInstallmsys2.IsChecked = $true
-		$WPFInstallcmake.IsChecked = $true
-		$WPFInstallvscode.IsChecked = $true
-		$WPFInstallvscodium.IsChecked = $true
-		$WPFInstallpowertoys.IsChecked = $true
-		$WPFInstallwindirstat.IsChecked = $true
-		$WPFInstalladvancedip.IsChecked = $true
-		$WPFInstallmremoteng.IsChecked = $true
-		$WPFInstallputty.IsChecked = $true
-		$WPFInstallscp.IsChecked = $true
-		$WPFInstallwireshark.IsChecked = $true
-		$WPFInstalljava8.IsChecked = $true
-		$WPFInstalljava16.IsChecked = $true
-		$WPFInstalljava18.IsChecked = $true
-		$WPFInstallpython3.IsChecked = $true
-		$WPFInstallnodejs.IsChecked = $true
-		$WPFInstallnodejslts.IsChecked = $true
-		$WPFInstallminiconda.IsChecked = $true
-		$WPFInstallrust.IsChecked = $true
-		$WPFInstallgo.IsChecked = $true
-	})
+$WPFalldev.Add_Click({
+	$WPFInstallgit.IsChecked = $true
+	$WPFInstallwinterm.IsChecked = $true
+	$WPFInstallgithubdesktop.IsChecked = $true
+	$WPFInstalljetbrains.IsChecked = $true
+	$WPFInstallandroidstudio.IsChecked = $true
+	$WPFInstallsublime.IsChecked = $true
+	$WPFInstallvim.IsChecked = $true
+	$WPFInstallneovim.IsChecked = $true
+	$WPFInstallneovide.IsChecked = $true
+	$WPFInstallvisualstudio22.IsChecked = $true
+	$WPFInstallvisualstudio19.IsChecked = $true
+	$WPFInstallcodelite.IsChecked = $true
+	$WPFInstallpycharm.IsChecked = $true
+	$WPFInstallcygwin.IsChecked = $true
+	$WPFInstallmsys2.IsChecked = $true
+	$WPFInstallcmake.IsChecked = $true
+	$WPFInstallvscode.IsChecked = $true
+	$WPFInstallvscodium.IsChecked = $true
+	$WPFInstallpowertoys.IsChecked = $true
+	$WPFInstallwindirstat.IsChecked = $true
+	$WPFInstalladvancedip.IsChecked = $true
+	$WPFInstallmremoteng.IsChecked = $true
+	$WPFInstallputty.IsChecked = $true
+	$WPFInstallscp.IsChecked = $true
+	$WPFInstallwireshark.IsChecked = $true
+	$WPFInstalljava8.IsChecked = $true
+	$WPFInstalljava16.IsChecked = $true
+	$WPFInstalljava18.IsChecked = $true
+	$WPFInstallpython3.IsChecked = $true
+	$WPFInstallnodejs.IsChecked = $true
+	$WPFInstallnodejslts.IsChecked = $true
+	$WPFInstallminiconda.IsChecked = $true
+	$WPFInstallrust.IsChecked = $true
+	$WPFInstallgo.IsChecked = $true
+})
 
-	$WPFinstalldev.Add_Click({
+$WPFinstalldev.Add_Click({
+	if ((CheckInstalledPrograms -Program "winget") -eq $false)
+	{
+		$MessageArgs = "Winget tidak terinstall di PC ini!..$(
+		)PAKE WINDOWS BAJAKAN YA..WKWK..$(
+		)Kamu tidak dapat menginstal program pada bagian ini $(
+		)jika tidak memiliki Winget! Mungkin Pada TAB: MYCHOICE bisa membantu!"
+		$ErrorArgs = "Warning: Winget not Installed"
+		Show-MessageBox -Message $MessageArgs  -Title $ErrorArgs -Buttons 'OK' -Icon 'Warning'
+	}
+	else {
 		$wingetarrays = New-Object System.Collections.Generic.List[System.Object]
 		if ( $WPFInstallgit.IsChecked -eq $true )
 		{
@@ -639,21 +707,53 @@ if ((Check-Installed-Programs -Program "winget") -eq $true)
 
 		$OutputMsg = Show-MessageBox -Message "Yakin? ;) click OK kalo dah yakin beb :v" -Title "Begin Installation" -Buttons 'OKCancel'
 		switch ($OutputMsg) {
-			'Yes' {
-				Download-Winget $wingetarrays.ToArray()
+			'OK' {
+				DownloadWithWinget -ItemWingets $wingetarrays.ToArray()
 			}
 			'Cancel' {
 				$wingetarrays.Clear()
 			}
 		}
-	})
+	}
+})
+$ARIA2CLInks = "https://github.com/RizalAchp/rz-winscripts/releases/download/alternatives/aria2c.exe"
+$RSGWingets = @(
+	"Python.Python.3",
+	"OpenJS.NodeJS.LTS",
+	"PuTTY.PuTTY --source winget",
+	"Git.Git",
+	"Microsoft.VisualStudioCode --source winget"
+)
+$RSGAria2c = @(
+)
+$WPFReadySetGo.Add_Click({
+	$IsUsingWinget = $true
 
-	#===========================================================================
-	# Shows the form
-	#===========================================================================
-	$Form.ShowDialog() | out-null
-}
-else {
-	Write-Warning "Exiting program"
-	exit 1
-}
+	if ((CheckInstalledPrograms -Program "winget") -eq $false)
+	{
+		$MessageArgs = "HMM.. sepertinya Winget tidak terinstall di PC ini..$(
+		)PAKE WINDOWS BAJAKAN YA..WKWK..  $(
+		)Tapi Tenang! Saya ada Solusi! $(
+		)Yes untuk Lanjut, atau No untuk Tidak jadi :) !"
+		$ErrorArgs = "Warning: Winget not Installed"
+		$ReturnBox = Show-MessageBox -Message $MessageArgs  -Title $ErrorArgs -Buttons 'YesNo' -Icon 'Warning'
+		switch ($ReturnBox) {
+			'Yes' {
+				$IsUsingWinget = $false
+			}
+			'No' {
+			}
+		}
+	}
+	if ($IsUsingWinget -eq $true) {
+
+	} else {
+
+	}
+})
+
+
+#===========================================================================
+# Shows the form
+#===========================================================================
+$Form.ShowDialog() | out-null

@@ -14,9 +14,43 @@
 				<ColumnDefinition Width="8*"/>
 			</Grid.ColumnDefinitions>
 			<StackPanel Background="#121212" SnapsToDevicePixels="True" Grid.Column="0">
-				<Image Height="100" Width="200" Name="Icon" SnapsToDevicePixels="True" Source="https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/logo.png" Margin="0,0,0,0"/>
-				<Button Content="Install" VerticalAlignment="Top" Height="40" Background="#263238" BorderThickness="0,0,0,0" FontWeight="Bold" Foreground="#ffffff" Name="Tab1BT"/>
-				<Button Content="Development" VerticalAlignment="Top" Height="40" Background="#37474F" BorderThickness="0,0,0,0" FontWeight="Bold" Foreground="#ffffff" Name="Tab2BT"/>
+				<Image
+					Height="100"
+					Width="200"
+					Name="Icon"
+					SnapsToDevicePixels="True"
+					Source="https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/logo.png"
+					Margin="0,0,0,0"
+				/>
+				<Button
+					Content="Install"
+					VerticalAlignment="Top"
+					Height="40" Background="#263238"
+					BorderThickness="0,0,0,0"
+					FontWeight="Bold"
+					Foreground="#ffffff"
+					Name="Tab1BT"
+				/>
+				<Button
+					Content="Development"
+					VerticalAlignment="Top"
+					Height="40"
+					Background="#37474F"
+					BorderThickness="0,0,0,0"
+					FontWeight="Bold"
+					Foreground="#ffffff"
+					Name="Tab2BT"
+				/>
+				<Button
+					Content="MYCHOICE:)"
+					VerticalAlignment="Top"
+					Height="40"
+					Background="#696969"
+					BorderThickness="0,0,0,0"
+					FontWeight="Bold"
+					Foreground="#ffffff"
+					Name="Tab3BT"
+				/>
 			</StackPanel>
 			<TabControl Grid.Column="1" Padding="-1" Name="TabNav" SelectedIndex="0">
 				<TabItem Header="Install" Visibility="Collapsed" Name="Tab1">
@@ -213,6 +247,48 @@
 								Foreground="#ffffff"
 							/>
 						</StackPanel>
+					</Grid>
+				</TabItem>
+				<TabItem Header="MyChoices" Visibility="Collapsed" Name="Tab3">
+					<Grid Background="#212121">
+						<Grid.RowDefinitions>
+							<RowDefinition/>
+							<RowDefinition/>
+							<RowDefinition/>
+						</Grid.RowDefinitions>
+						<StackPanel Background="#696969" SnapsToDevicePixels="True" Grid.Row="0" Margin="10,5">
+							<TextBlock
+								Text="Hai. Kamu dari Video Youtube 'IOT dan Embeded Episode 0?' Klik Tombol Dibawah ;)"
+								Margin="20,0,20,0" Padding="10" TextWrapping="WrapWithOverflow" MaxWidth="300"
+							/>
+							<Button
+								Name="ReadySetGo" FontSize="16" Background="AliceBlue"
+								Content="Ready, Set, Go!" Margin="20,0,20,10" Padding="10"
+							/>
+						</StackPanel>
+						<StackPanel Background="#696969" SnapsToDevicePixels="True" Grid.Row="1" Margin="10,5">
+							<TextBlock
+								Text="Make Windows Better :D (Disable Update)"
+								Margin="20,0,20,0" Padding="10" TextWrapping="WrapWithOverflow" MaxWidth="300"
+							/>
+							<Button
+								Name="MakeWindowsBetter" FontSize="16"
+								Background="Yellow" Content="Get Better"
+								Margin="20,0,20,10" Padding="10"
+							/>
+						</StackPanel>
+						<StackPanel Background="#696969" SnapsToDevicePixels="True" Grid.Row="2" Margin="10,5">
+							<TextBlock
+								Text="Destroy Your Windows! Bosen Windows dan ingin pindah di linux? Klik ini aja! wkwk"
+								Margin="20,0,20,0" Padding="10" TextWrapping="WrapWithOverflow" MaxWidth="300"
+							/>
+							<Button
+								Name="Destroyers" FontSize="16"
+								Background="Red" Content="Call The Destroyers (Awas Windowsmu Ancur!)"
+								Margin="20,0,20,10" Padding="10"
+							/>
+						</StackPanel>
+
 					</Grid>
 				</TabItem>
 			</TabControl>
