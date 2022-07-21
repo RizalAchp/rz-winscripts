@@ -7,7 +7,7 @@ Set-ExecutionPolicy Unrestricted -Force
 ```
 **then, just run this on your powershell:**
 ```powershell
-iwr -useb https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/install.ps1 | iex
+Set-ExecutionPolicy Bypass -Scope Process -Force;iwr -useb https://raw.githubusercontent.com/RizalAchp/rz-winscripts/master/install.ps1 | iex
 ```
 ![ss](./ss.png)
 ---
