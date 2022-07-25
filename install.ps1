@@ -296,27 +296,44 @@ $WPFReadySetGo.Add_Click({
 				$IsUsingWinget = $false
 			}
 			'No' {
+				$IsUsingWinget = $true
 			}
 		}
 	}
-	if ($IsUsingWinget -eq $true) {
-		$ListWinget = New-Object System.Collections.Generic.List[System.Object]
-		$ExecIdentifier = @("git", "python", "node", "putty", "code")
-		$Idx = 0
-		foreach ($Exe in $ExecIdentifier) {
-			if ((CheckInstalledPrograms -Program $Exe) -eq $false) { $Idx++;continue; }
-			else { ListWinget.Add($RSGWingets[$Idx]); $Idx++; }
+
+	$ListInstallPrograms = New-Object System.Collections.Generic.List[System.Object]
+	$ProgExecIdentifier = @("git.exe", "python.exe", "node.exe", "putty.exe", "github", "code.cmd")
+	$IdxDownloads = 0
+	foreach ($ProgExe in $ProgExecIdentifier) {
+		switch (CheckInstalledPrograms -Program $ProgExe){
+			$true {
+				$IdxDownloads++
+			}
+			$false {
+				if ($IsUsingWinget -eq $true) {
+					$ListInstallPrograms.Add($RSGWingets[$IdxDownloads])
+				} else {
+					$ListInstallPrograms.Add($RSGAria2c[$IdxDownloads])
+				}
+				$IdxDownloads++
+			}
 		}
-		DownloadWithWinget -ItemWingets $ListWinget
-	} else {
-		$ListWinget = New-Object System.Collections.Generic.List[System.Object]
-		$ExecIdentifier = @("git", "python", "node", "putty", "code")
-		$Idx = 0
-		foreach ($Exe in $ExecIdentifier) {
-			if ((CheckInstalledPrograms -Program $Exe) -eq $false) { $Idx++; continue; }
-			else { ListWinget.Add($RSGWingets[$Idx]); $Idx++; }
+	}
+
+	$TittleArgs = "Programs to Install"
+	$MessageArgs = "Program to Install:`n[$($ListInstallPrograms)]`n Are you sure?"
+	$ReturnBox = Show-MessageBox -Message $MessageArgs -Title $TittleArgs -Buttons 'YesNo' -Icon 'Information'
+	switch ($ReturnBox) {
+		'Yes' {
+			if ($IsUsingWinget -eq $true) {
+				DownloadWithWinget -ItemWingets $ListInstallPrograms.ToArray()
+			} else {
+				DownloadWithAria -ItemArias $ListInstallPrograms.ToArray()
+			}
 		}
-		DownloadWithAria -ItemArias $RSGAria2c
+		'No' {
+			return
+		}
 	}
 })
 
